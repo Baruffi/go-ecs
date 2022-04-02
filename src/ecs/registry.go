@@ -30,6 +30,7 @@ func getComponent[C ComponentData](r *Registry) (Component[C], bool) {
 // Link - Links the component to the respective entity inside the registry
 func Link[C ComponentData](r *Registry, e Entity, c C) Component[C] {
 	vc, _ := getComponent[C](r)
+	vc.entities[e.id] = e
 	vc.data[e.id] = c
 	r.components[vc.id] = vc
 	return vc
@@ -54,17 +55,17 @@ func Clear(r *Registry) {
 	r.components = make(map[ComponentId]AnyComponent)
 }
 
-// Get - gets all entity components from the component type
-func Get[C ComponentData](r *Registry) map[EntityId]C {
+// View - gets all entities from the component type
+func View[C ComponentData](r *Registry) map[EntityId]Entity {
 	if vc, ok := getComponent[C](r); ok {
-		return vc.data
+		return vc.entities
 	}
 
 	return nil
 }
 
-// GetFrom - gets specific component data by its type and parent entity id (or returns the default value)
-func GetFrom[C ComponentData](r *Registry, e Entity) (c C, ok bool) {
+// Get - gets specific component data by its type and parent entity id (or returns the default value)
+func Get[C ComponentData](r *Registry, e Entity) (c C, ok bool) {
 	vc, ok := getComponent[C](r)
 	if ok {
 		c = vc.data[e.id]
