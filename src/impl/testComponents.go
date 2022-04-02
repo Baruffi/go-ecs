@@ -10,11 +10,6 @@ import (
 	"github.com/faiface/pixel/text"
 )
 
-// TODO: Need to test type assertion grouping through interfaces like this
-type Drawable interface {
-	Draw(surface pixel.Target)
-}
-
 type TextComponent struct {
 	txt *text.Text
 }
@@ -25,6 +20,10 @@ func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas) {
 
 func (t *TextComponent) Write(str string) {
 	fmt.Fprintln(t.txt, str)
+}
+
+func (t *TextComponent) Clear() {
+	t.txt.Clear()
 }
 
 func (t *TextComponent) Draw(surface pixel.Target) {

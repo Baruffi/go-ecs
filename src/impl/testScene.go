@@ -12,30 +12,57 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
-func testUpdater(r *ecs.Registry, dt float64) {
+func setupScene(s *ecs.Scene) {
+	timeComponent := &TimeComponent{
+		ticker: time.NewTicker(time.Second),
+	}
+	cameraComponent := &CameraComponent{
+		camPos:       pixel.ZV,
+		camSpeed:     500.0,
+		camZoom:      1.0,
+		camZoomSpeed: 1.2,
+	}
+	textComponent := &TextComponent{}
+	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	textComponent.Init(pixel.V(100, 500), atlas)
+
+	worldMap := s.CreateEntity()
+
+	ecs.AddComponent(worldMap, timeComponent)
+	ecs.AddComponent(worldMap, textComponent)
+	ecs.AddComponent(worldMap, cameraComponent)
+}
+
+func updateFromRegistry(r *ecs.Registry, dt float64) {
 	for _, e := range ecs.View[*TimeComponent](r) {
-		timeData, _ := ecs.Get[*TimeComponent](r, e)
-		if textData, hasText := ecs.Get[*TextComponent](r, e); hasText {
-			timeData.Update()
+		timeComponent, _ := ecs.Get[*TimeComponent](r, e)
+		if textComponent, hasText := ecs.Get[*TextComponent](r, e); hasText {
+			timeComponent.Update()
 
 			select {
-			case <-timeData.ticker.C:
-				textData.Write(fmt.Sprintf("FPS: %d", timeData.frames))
-				timeData.frames = 0
+			case <-timeComponent.ticker.C:
+				textComponent.Clear()
+				textComponent.Write(fmt.Sprintf("FPS: %d", timeComponent.frames))
+				timeComponent.frames = 0
 			default:
 			}
 		}
 	}
 }
 
-func testDrawer(r *ecs.Registry, t pixel.Target) {
-	for _, e := range ecs.View[*TextComponent](r) {
-		drawable, _ := ecs.Get[*TextComponent](r, e)
-		drawable.Draw(t)
+func drawFromRegistry(r *ecs.Registry) func(s ecs.Surface) {
+	testDrawer := func(s ecs.Surface) {
+		t := s.(pixel.Target)
+		for _, e := range ecs.View[*TextComponent](r) {
+			textComponent, _ := ecs.Get[*TextComponent](r, e)
+			textComponent.Draw(t)
+		}
 	}
+
+	return testDrawer
 }
 
-func setup() (*pixelgl.Window, *ecs.Registry) {
+func setup() ecs.Ecs {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Proto countries",
 		Bounds: pixel.R(0, 0, 1024, 768),
@@ -47,56 +74,28 @@ func setup() (*pixelgl.Window, *ecs.Registry) {
 	}
 
 	registry := ecs.NewRegistry()
+	testScene := ecs.NewScene(registry, ecs.UpdaterFunc(updateFromRegistry))
+	setupScene(testScene)
 
-	timeData := &TimeComponent{
-		ticker: time.NewTicker(time.Second),
+	renderer := PixelRenderer{
+		win:        win,
+		clearColor: colornames.Black,
+		drawers:    []ecs.Drawer{ecs.DrawerFunc(drawFromRegistry(registry))},
 	}
-	cameraData := &CameraComponent{
-		camPos:       pixel.ZV,
-		camSpeed:     500.0,
-		camZoom:      1.0,
-		camZoomSpeed: 1.2,
+
+	clock := ecs.Clock{}
+
+	game := ecs.Ecs{
+		Clock:    clock,
+		Renderer: renderer,
+		Scene:    testScene,
 	}
-	textData := &TextComponent{}
-	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	textData.Init(pixel.V(100, 500), atlas)
 
-	worldMap := ecs.NewEntity()
-
-	ecs.Link(registry, worldMap, timeData)
-	ecs.Link(registry, worldMap, textData)
-	ecs.Link(registry, worldMap, cameraData)
-
-	return win, registry
+	return game
 }
 
 func Run() {
-	win, registry := setup()
-	testScene := ecs.Scene{
-		Registry: registry,
-		Updater:  ecs.UpdaterFunc(testUpdater),
-		Drawer:   ecs.DrawerFunc(testDrawer),
-	}
+	game := setup()
 
-	updateCh := time.NewTicker(time.Second)
-	frames := 0
-	last := time.Now()
-	for !win.Closed() {
-		dt := time.Since(last).Seconds()
-		last = time.Now()
-
-		testScene.Update(dt)
-
-		win.Clear(colornames.Black)
-		testScene.Draw(win)
-		win.Update()
-
-		frames++
-		select {
-		case <-updateCh.C:
-			win.SetTitle(fmt.Sprintf("Proto countries | FPS: %d", frames))
-			frames = 0
-		default:
-		}
-	}
+	game.Loop()
 }

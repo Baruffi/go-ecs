@@ -9,11 +9,9 @@ type Registry struct {
 
 // NewRegistry - Creates a new registry filling in required initialization parameters
 func NewRegistry() *Registry {
-	registry := Registry{
+	return &Registry{
 		components: make(map[ComponentId]AnyComponent),
 	}
-
-	return &registry
 }
 
 // getComponent - Find or create a component of type C
@@ -25,6 +23,15 @@ func getComponent[C ComponentData](r *Registry) (Component[C], bool) {
 	}
 	vc := NewComponent[C]()
 	return vc, false
+}
+
+// Has - Checks if component exists in the registry
+func Has[C ComponentData](r *Registry, e Entity, c C) bool {
+	if v, ok := getComponent[C](r); ok {
+		_, ok := v.entities[e.id]
+		return ok
+	}
+	return false
 }
 
 // Link - Links the component to the respective entity inside the registry

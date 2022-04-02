@@ -1,17 +1,5 @@
 package ecs
 
-import "github.com/faiface/pixel"
-
-type Drawer interface {
-	Draw(*Registry, pixel.Target)
-}
-
-type DrawerFunc func(*Registry, pixel.Target)
-
-func (f DrawerFunc) Draw(r *Registry, t pixel.Target) {
-	f(r, t)
-}
-
 type Updater interface {
 	Update(*Registry, float64)
 }
@@ -23,15 +11,23 @@ func (f UpdaterFunc) Update(r *Registry, dt float64) {
 }
 
 type Scene struct {
-	*Registry
-	Updater
-	Drawer
+	registry *Registry
+	updater  Updater
+}
+
+func NewScene(registry *Registry, updater Updater) *Scene {
+	return &Scene{
+		registry: registry,
+		updater:  updater,
+	}
+}
+
+func (s *Scene) CreateEntity() Entity {
+	e := NewEntity(s)
+
+	return e
 }
 
 func (s *Scene) Update(dt float64) {
-	s.Updater.Update(s.Registry, dt)
-}
-
-func (s *Scene) Draw(t pixel.Target) {
-	s.Drawer.Draw(s.Registry, t)
+	s.updater.Update(s.registry, dt)
 }
