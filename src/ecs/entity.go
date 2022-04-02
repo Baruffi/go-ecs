@@ -1,6 +1,6 @@
 package ecs
 
-type EntityId uint64
+type EntityId string
 
 type Entity struct {
 	id EntityId

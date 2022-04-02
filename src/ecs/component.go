@@ -1,6 +1,6 @@
 package ecs
 
-type ComponentId uint64
+type ComponentId string
 
 type ComponentData interface {
 }

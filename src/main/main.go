@@ -110,27 +110,27 @@ func loadPicture(path string) (pixel.Picture, error) {
 func setup() (*ecs.Registry, []ecs.Entity) {
 	registry := ecs.NewRegistry()
 
-	timeData := TimeComponent{
+	timeData := &TimeComponent{
 		updateCh: time.Tick(time.Second),
 	}
-	cameraData := CameraComponent{
+	cameraData := &CameraComponent{
 		camPos:       pixel.ZV,
 		camSpeed:     500.0,
 		camZoom:      1.0,
 		camZoomSpeed: 1.2,
 	}
-	canvasDrawComponent := DrawComponent{}
-	characterDrawComponent := DrawComponent{}
+	canvasDrawComponent := &DrawComponent{}
+	characterDrawComponent := &DrawComponent{}
 
 	canvas := ecs.NewEntity()
 
-	ecs.Link(registry, canvas, &timeData)
-	ecs.Link(registry, canvas, &canvasDrawComponent)
+	ecs.Link(registry, canvas, timeData)
+	ecs.Link(registry, canvas, canvasDrawComponent)
 
 	character := ecs.NewEntity()
 
-	ecs.Link(registry, character, &cameraData)
-	ecs.Link(registry, character, &characterDrawComponent)
+	ecs.Link(registry, character, cameraData)
+	ecs.Link(registry, character, characterDrawComponent)
 
 	return registry, []ecs.Entity{canvas, character}
 }
