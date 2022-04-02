@@ -96,14 +96,11 @@ func (c *CameraComponent) Unproject(position pixel.Vec) pixel.Vec {
 }
 
 type TimeComponent struct {
-	frames int
-	dt     float64
-	last   time.Time
+	time   time.Time
 	ticker *time.Ticker
+	format string
 }
 
-func (t *TimeComponent) Update() {
-	t.dt = time.Since(t.last).Seconds()
-	t.last = time.Now()
-	t.frames++
+func (t *TimeComponent) Format() string {
+	return t.time.Local().Format(t.format)
 }
