@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"example.com/v0/src/engine"
 	"example.com/v0/src/engine/ecs"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -27,16 +26,14 @@ func setupScene(s *ecs.Scene, updater *EntityUpdater, win *pixelgl.Window) {
 	textComponent := &TextComponent{}
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
 	textComponent.Init(pixel.V(10, 10), atlas)
-	renderEmitterComponent := &RenderEventEmitterComponent{}
-	renderEmitterComponent.Clear()
-	renderEmitterComponent.Add(engine.DrawCall, textComponent)
 
 	worldMap := s.CreateEntity()
 
 	ecs.AddComponent(worldMap, timeComponent)
 	ecs.AddComponent(worldMap, cameraComponent)
 	ecs.AddComponent(worldMap, textComponent)
-	ecs.AddComponent(worldMap, renderEmitterComponent)
+
+	ecs.AddComponentGroup[Drawable2](worldMap, textComponent)
 
 	// Hmmmm
 	updater.window = win
@@ -51,12 +48,16 @@ type EntityUpdater struct {
 func (u *EntityUpdater) Update(dt float64) {
 	for _, e := range u.entities {
 		if cameraComponent, ok := ecs.GetComponent[*CameraComponent](e); ok {
-			if u.window.Pressed(pixelgl.MouseButton1) {
-				mouseDelta := u.window.MousePosition().Sub(u.window.MousePreviousPosition())
-				cameraComponent.Move(mouseDelta)
+			if cameraComponent.active {
+				if u.window.Pressed(pixelgl.MouseButton1) {
+					mouseDelta := u.window.MousePosition().Sub(u.window.MousePreviousPosition())
+					cameraComponent.Move(mouseDelta)
+				}
+				cameraComponent.Scroll(u.window.MouseScroll())
+				cameraComponent.Update()
+
+				u.window.SetMatrix(cameraComponent.cam)
 			}
-			cameraComponent.Scroll(u.window.MouseScroll())
-			cameraComponent.Update()
 		}
 		if textComponent, ok := ecs.GetComponent[*TextComponent](e); ok {
 			if timeComponent, ok := ecs.GetComponent[*TimeComponent](e); ok {
@@ -73,11 +74,15 @@ func (u *EntityUpdater) Update(dt float64) {
 	}
 }
 
-func SetupScene(win *pixelgl.Window) *ecs.Scene {
+func SetupStage(win *pixelgl.Window) ecs.Stage {
 	registry := ecs.NewRegistry()
 	updater := &EntityUpdater{}
 	testScene := ecs.NewScene(registry, updater)
 	setupScene(testScene, updater, win)
 
-	return testScene
+	scenes := []*ecs.Scene{testScene}
+
+	stage := ecs.NewStage(0, scenes)
+
+	return stage
 }

@@ -32,3 +32,7 @@ func (s *Scene) CreateEntity() Entity {
 func Map[C ComponentData](s *Scene) map[EntityId]C {
 	return View[C](s.registry)
 }
+
+func MapGroup[C ComponentData](s *Scene) []map[EntityId]C {
+	return ViewGroup[C](s.registry)
+}

@@ -2,12 +2,13 @@ package impl
 
 import (
 	"example.com/v0/src/engine"
+	"example.com/v0/src/engine/ecs"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 )
 
-func setup() engine.Engine[*PixelRenderer] {
+func setup() (*pixelgl.Window, ecs.Stage, engine.Clock) {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Proto countries",
 		Bounds: pixel.R(0, 0, 1024, 768),
@@ -18,29 +19,37 @@ func setup() engine.Engine[*PixelRenderer] {
 		panic(err)
 	}
 
-	running := func() bool {
-		return !win.Closed()
-	}
+	stage := SetupStage(win)
 
 	clock := engine.Clock{}
 
-	render := engine.Render[*PixelRenderer]{
-		Renderer: &PixelRenderer{
-			window:     win,
-			clearColor: colornames.Black,
-		},
-		DrawHandler: engine.DrawHandlerFunc[*PixelRenderer](DrawTest),
-	}
-
-	testScene := SetupScene(win)
-
-	engine := engine.NewEngine(engine.StatefulRunnerFunc(running), clock, render, testScene)
-
-	return engine
+	return win, stage, clock
 }
 
 func Run() {
-	engine := setup()
+	win, stage, clock := setup()
 
-	engine.Run()
+	clock.Init()
+	for !win.Closed() {
+		dt := clock.Tick()
+
+		scene := stage.GetScene()
+		scene.Update(dt)
+
+		win.Clear(colornames.Black)
+
+		var drawables []Drawable2
+		for _, group := range ecs.MapGroup[Drawable2](scene) {
+			for _, drawable := range group {
+				drawables = append(drawables, drawable)
+			}
+		}
+		drawer := Drawer{
+			target:    win,
+			drawables: drawables,
+		}
+		drawer.Draw()
+
+		win.Update()
+	}
 }
