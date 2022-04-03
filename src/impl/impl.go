@@ -1,13 +1,13 @@
 package impl
 
 import (
-	"example.com/v0/src/ecs"
+	"example.com/v0/src/engine"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
 )
 
-func setup() ecs.Ecs {
+func setup() engine.Engine[*PixelRenderer] {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Proto countries",
 		Bounds: pixel.R(0, 0, 1024, 768),
@@ -18,29 +18,29 @@ func setup() ecs.Ecs {
 		panic(err)
 	}
 
-	registry := ecs.NewRegistry()
-	testScene := ecs.NewScene(registry, ecs.UpdaterFunc(updateFromRegistry))
-	setupScene(testScene)
-
-	renderer := PixelRenderer{
-		win:        win,
-		clearColor: colornames.Black,
-		drawers:    []ecs.Drawer{ecs.DrawerFunc(drawFromRegistry(registry))},
+	running := func() bool {
+		return !win.Closed()
 	}
 
-	clock := ecs.Clock{}
+	clock := engine.Clock{}
 
-	game := ecs.Ecs{
-		Clock:    clock,
-		Renderer: renderer,
-		Scene:    testScene,
+	render := engine.Render[*PixelRenderer]{
+		Renderer: &PixelRenderer{
+			window:     win,
+			clearColor: colornames.Black,
+		},
+		DrawHandler: engine.DrawHandlerFunc[*PixelRenderer](DrawTest),
 	}
 
-	return game
+	testScene := SetupScene(win)
+
+	engine := engine.NewEngine(engine.StatefulRunnerFunc(running), clock, render, testScene)
+
+	return engine
 }
 
 func Run() {
-	game := setup()
+	engine := setup()
 
-	game.Loop()
+	engine.Run()
 }

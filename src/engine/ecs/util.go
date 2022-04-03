@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// generateId - Generate a random uint64 id
-func generateId() string {
+// GenerateId - Generate a random uint64 id
+func GenerateId() string {
 	return uuid.NewString()
 }

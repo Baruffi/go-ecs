@@ -6,9 +6,30 @@ import (
 	"math"
 	"time"
 
+	"example.com/v0/src/engine"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/text"
 )
+
+type EventEmitterComponent[E engine.EventCall] struct {
+	events engine.Events[E]
+}
+
+func (e *EventEmitterComponent[E]) Add(c E, d engine.EventData) {
+	e.events[c] = append(e.events[c], d)
+}
+
+func (e *EventEmitterComponent[E]) Clear() {
+	e.events = make(engine.Events[E])
+}
+
+func (e *EventEmitterComponent[E]) Emit() engine.Events[E] {
+	return e.events
+}
+
+type RenderEventEmitterComponent struct {
+	EventEmitterComponent[engine.RenderCall]
+}
 
 type TextComponent struct {
 	txt *text.Text
@@ -84,11 +105,27 @@ type CameraComponent struct {
 	camSpeed     float64
 	camZoom      float64
 	camZoomSpeed float64
+	active       bool
 }
 
-func (c *CameraComponent) Update(position pixel.Vec, scroll pixel.Vec) {
-	c.cam = pixel.IM.Scaled(c.camPos, c.camZoom).Moved(position.Sub(c.camPos))
+func (c *CameraComponent) Toggle() {
+	c.active = !c.active
+}
+
+func (c *CameraComponent) Scroll(scroll pixel.Vec) {
 	c.camZoom *= math.Pow(c.camZoomSpeed, scroll.Y)
+}
+
+func (c *CameraComponent) Move(delta pixel.Vec) {
+	c.camPos = c.camPos.Add(delta)
+}
+
+func (c *CameraComponent) Update() {
+	c.cam = pixel.IM.Scaled(pixel.ZV, c.camZoom).Moved(c.camPos)
+}
+
+func (c *CameraComponent) Project(position pixel.Vec) pixel.Vec {
+	return c.cam.Project(position)
 }
 
 func (c *CameraComponent) Unproject(position pixel.Vec) pixel.Vec {
@@ -103,4 +140,8 @@ type TimeComponent struct {
 
 func (t *TimeComponent) Format() string {
 	return t.time.Local().Format(t.format)
+}
+
+// TODO
+type ColliderComponent struct {
 }

@@ -3,30 +3,54 @@ package impl
 import (
 	"image/color"
 
-	"example.com/v0/src/ecs"
+	"example.com/v0/src/engine"
+	"example.com/v0/src/engine/ecs"
+	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )
 
+type Drawable interface {
+	Draw(pixel.Target)
+}
 type PixelRenderer struct {
-	win        *pixelgl.Window
+	window     *pixelgl.Window
 	clearColor color.RGBA
-	drawers    []ecs.Drawer
+	emitters   map[ecs.EntityId]*RenderEventEmitterComponent
 }
 
-func (r PixelRenderer) CanRender() bool {
-	return !r.win.Closed()
-}
-
-func (r PixelRenderer) Clear() {
-	r.win.Clear(r.clearColor)
-}
-
-func (r PixelRenderer) BeginScene() {
-	for _, drawer := range r.drawers {
-		drawer.Draw(r.win)
+func (r *PixelRenderer) Consume(events engine.Events[engine.RenderCall]) {
+	for call, data := range events {
+		switch call {
+		case engine.DrawCall:
+			for _, v := range data {
+				if drawable, ok := v.(Drawable); ok {
+					drawable.Draw(r.window)
+				}
+			}
+		case engine.ClearCall:
+			r.window.Clear(r.clearColor)
+		}
 	}
 }
 
-func (r PixelRenderer) EndScene() {
-	r.win.Update()
+func (r *PixelRenderer) BeginScene(s *ecs.Scene) {
+	for _, camera := range ecs.Map[*CameraComponent](s) {
+		if camera.active {
+			r.window.SetMatrix(camera.cam)
+			break
+		}
+	}
+
+	// Hmmmm
+	r.emitters = ecs.Map[*RenderEventEmitterComponent](s)
+}
+
+func (r *PixelRenderer) EndScene() {
+	r.window.Update()
+}
+
+func DrawTest(r *PixelRenderer) {
+	for _, emitter := range r.emitters {
+		r.Consume(emitter.Emit())
+	}
 }
