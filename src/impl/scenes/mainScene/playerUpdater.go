@@ -18,13 +18,13 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 				cameraComponent.Move(mouseDelta)
 			}
 			cameraComponent.Scroll(w.MouseScroll())
-			cameraComponent.Update()
+			cameraComponent.Update(w.Bounds().Center())
 
 			w.SetMatrix(cameraComponent.Cam)
 
 			for _, drawable := range ecs.GetComponentGroup[components.Drawable](u.Player) {
 				if canvasComponent, ok := drawable.(*components.CanvasComponent); ok {
-					canvasComponent.Transform(w.Bounds(), cameraComponent.CamPos, cameraComponent.CamZoom)
+					canvasComponent.Transform(w.Bounds().Center(), cameraComponent.CamPos, cameraComponent.CamZoom)
 				}
 			}
 		}

@@ -55,7 +55,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 		Active:       true,
 	}
 	UICanvas := &components.CanvasComponent{}
-	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0}, win.Bounds(), mainCamera.CamPos, mainCamera.CamZoom)
+	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0}, win.Bounds().Center(), mainCamera.CamPos, mainCamera.CamZoom)
 	worldTime := &components.TimeComponent{
 		Ticker: time.NewTicker(time.Second),
 		Format: "Mon, 02 Jan 2006 15:04:05 MST",

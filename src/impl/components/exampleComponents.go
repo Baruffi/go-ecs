@@ -15,20 +15,23 @@ import (
 type CanvasComponent struct {
 	Canvas *pixelgl.Canvas
 	Color  color.RGBA
+	Center pixel.Vec
 	Offset pixel.Vec
 	Scale  float64
 }
 
-func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA, winBounds pixel.Rect, camPos pixel.Vec, camZoom float64) {
+func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA, center pixel.Vec, camPos pixel.Vec, camZoom float64) {
 	c.Canvas = pixelgl.NewCanvas(bounds)
 	c.Color = color
 
-	c.Offset = winBounds.Center().Sub(camPos)
+	c.Center = center
+	c.Offset = center.Sub(camPos)
 	c.Scale = 1 / camZoom
 }
 
-func (c *CanvasComponent) Transform(winBounds pixel.Rect, camPos pixel.Vec, camZoom float64) {
-	c.Offset = winBounds.Center().Sub(camPos)
+func (c *CanvasComponent) Transform(center pixel.Vec, camPos pixel.Vec, camZoom float64) {
+	c.Center = center
+	c.Offset = center.Sub(camPos)
 	c.Scale = 1 / camZoom
 }
 
@@ -37,7 +40,7 @@ func (c *CanvasComponent) Clear() {
 }
 
 func (c *CanvasComponent) Draw(target pixel.Target) {
-	c.Canvas.Draw(target, pixel.IM.Moved(c.Offset).Scaled(pixel.ZV, c.Scale))
+	c.Canvas.Draw(target, pixel.IM.Moved(c.Offset).Scaled(c.Center, c.Scale))
 }
 
 type TextComponent struct {
@@ -129,8 +132,8 @@ func (c *CameraComponent) Move(delta pixel.Vec) {
 	c.CamPos = c.CamPos.Add(delta)
 }
 
-func (c *CameraComponent) Update() {
-	c.Cam = pixel.IM.Scaled(pixel.ZV, c.CamZoom).Moved(c.CamPos)
+func (c *CameraComponent) Update(center pixel.Vec) {
+	c.Cam = pixel.IM.Scaled(center, c.CamZoom).Moved(c.CamPos)
 }
 
 func (c *CameraComponent) Project(position pixel.Vec) pixel.Vec {
