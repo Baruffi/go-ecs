@@ -2,6 +2,8 @@ package ecs
 
 type ComponentId string
 
+type TypedComponentId[C ComponentData] ComponentId
+
 type ComponentData interface {
 }
 

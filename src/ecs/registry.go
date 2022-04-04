@@ -58,21 +58,21 @@ func HasGroup[C ComponentData](r *Registry, e EntityId) bool {
 }
 
 // Link - Links the component to the respective entity inside the registry
-func Link[C ComponentData](r *Registry, e EntityId, c C) ComponentId {
+func Link[C ComponentData](r *Registry, e EntityId, c C) TypedComponentId[C] {
 	vc, _ := getComponent[C](r)
 	vc.data[e] = c
 	r.components[vc.id] = vc
-	return vc.id
+	return TypedComponentId[C](vc.id)
 }
 
 // Group - Links the component to the respective entity inside the group
-func Group[C ComponentData](r *Registry, e EntityId, c ComponentData) ComponentId {
+func Group[C ComponentData](r *Registry, e EntityId, c ComponentData) TypedComponentId[C] {
 	vg, _ := getComponentGroup[C](r)
 	vc := NewComponent[C]()
 	vc.data[e] = c.(C)
 	vg.members[vc.id] = vc
 	r.components[vg.id] = vg
-	return vg.id
+	return TypedComponentId[C](vg.id)
 }
 
 // Unlink - Unlinks the component type from the respective entity inside the registry (if they were not linked, this is a no-op)
@@ -132,8 +132,8 @@ func ViewGroup[C ComponentData](r *Registry) []map[EntityId]C {
 }
 
 // ViewById - gets all entities from the component type by id
-func ViewById[C ComponentData](r *Registry, i ComponentId) map[EntityId]C {
-	if vc, ok := r.components[i].(Component[C]); ok {
+func ViewById[C ComponentData](r *Registry, i TypedComponentId[C]) map[EntityId]C {
+	if vc, ok := r.components[ComponentId(i)].(Component[C]); ok {
 		return vc.data
 	}
 
@@ -141,9 +141,9 @@ func ViewById[C ComponentData](r *Registry, i ComponentId) map[EntityId]C {
 }
 
 // ViewGroupById - gets all entities from the component group by id
-func ViewGroupById[C ComponentData](r *Registry, i ComponentId) []map[EntityId]C {
+func ViewGroupById[C ComponentData](r *Registry, i TypedComponentId[C]) []map[EntityId]C {
 	group := make([]map[EntityId]C, 0)
-	if vg, ok := r.components[i].(ComponentGroup[C]); ok {
+	if vg, ok := r.components[ComponentId(i)].(ComponentGroup[C]); ok {
 		for _, vc := range vg.members {
 			group = append(group, vc.data)
 		}
@@ -175,8 +175,8 @@ func GetGroup[C ComponentData](r *Registry, e EntityId) []C {
 }
 
 // GetById - gets specific component data by its component id and parent entity id (or returns the default value)
-func GetById[C ComponentData](r *Registry, i ComponentId, e EntityId) (c C, ok bool) {
-	vc, ok := r.components[i].(Component[C])
+func GetById[C ComponentData](r *Registry, i TypedComponentId[C], e EntityId) (c C, ok bool) {
+	vc, ok := r.components[ComponentId(i)].(Component[C])
 	if ok {
 		c, ok = vc.data[e]
 	}
@@ -185,9 +185,9 @@ func GetById[C ComponentData](r *Registry, i ComponentId, e EntityId) (c C, ok b
 }
 
 // GetGroupById - gets specific component data group by its group id and parent entity id
-func GetGroupById[C ComponentData](r *Registry, i ComponentId, e EntityId) []C {
+func GetGroupById[C ComponentData](r *Registry, i TypedComponentId[C], e EntityId) []C {
 	group := make([]C, 0)
-	if vg, ok := r.components[i].(ComponentGroup[C]); ok {
+	if vg, ok := r.components[ComponentId(i)].(ComponentGroup[C]); ok {
 		for _, vc := range vg.members {
 			group = append(group, vc.data[e])
 		}
