@@ -121,6 +121,11 @@ func (t *TimeComponent) String() string {
 	return t.Time.Local().Format(t.Format)
 }
 
-// TODO
-type ColliderComponent struct {
+type HoverComponent struct {
+	Area      pixel.Rect
+	IsHovered bool
+}
+
+func (h *HoverComponent) Hover(mousePosition pixel.Vec) {
+	h.IsHovered = h.Area.Contains(mousePosition)
 }

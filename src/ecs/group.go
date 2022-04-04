@@ -12,3 +12,16 @@ func NewComponentGroup[C ComponentData]() ComponentGroup[C] {
 		members: make(map[ComponentId]Component[C]),
 	}
 }
+
+type EntityGroup struct {
+	id      EntityId
+	members map[EntityId]Entity
+}
+
+// NewEntityGroup - Creates a new EntityGroup filling in required initialization parameters
+func NewEntityGroup() EntityGroup {
+	return EntityGroup{
+		id:      EntityId(GenerateId()),
+		members: make(map[EntityId]Entity),
+	}
+}

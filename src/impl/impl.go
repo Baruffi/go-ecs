@@ -3,7 +3,7 @@ package impl
 import (
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
-	"example.com/v0/src/impl/scenes/exampleScene"
+	"example.com/v0/src/impl/scenes/mainScene"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
@@ -26,8 +26,8 @@ func setupWindowAndClock() (*pixelgl.Window, Clock) {
 }
 
 func setupStage(win *pixelgl.Window) ecs.Stage {
-	testScene := exampleScene.New(win)
-	scenes := []*ecs.Scene{testScene}
+	mainScene := mainScene.NewScene(win)
+	scenes := []*ecs.Scene{mainScene}
 	stage := ecs.NewStage(0, scenes)
 
 	return stage
@@ -45,6 +45,12 @@ func Run() {
 		scene.Update(dt)
 
 		win.Clear(colornames.Black)
+
+		for _, group := range ecs.MapGroup[components.UIElement](scene) {
+			for _, UIElement := range group {
+				UIElement.Draw(win)
+			}
+		}
 
 		for _, group := range ecs.MapGroup[components.Drawable](scene) {
 			for _, drawable := range group {

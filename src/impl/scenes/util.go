@@ -1,4 +1,4 @@
-package impl
+package scenes
 
 import (
 	"image"
@@ -7,7 +7,7 @@ import (
 	"github.com/faiface/pixel"
 )
 
-func loadPicture(path string) (pixel.Picture, error) {
+func LoadPicture(path string) (pixel.Picture, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

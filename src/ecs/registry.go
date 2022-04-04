@@ -135,7 +135,7 @@ func ViewGroup[C ComponentData](r *Registry) []map[EntityId]C {
 func Get[C ComponentData](r *Registry, e EntityId) (c C, ok bool) {
 	vc, ok := getComponent[C](r)
 	if ok {
-		c = vc.data[e]
+		c, ok = vc.data[e]
 	}
 
 	return c, ok

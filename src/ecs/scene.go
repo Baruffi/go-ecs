@@ -29,6 +29,10 @@ func (s *Scene) CreateEntity() Entity {
 	return e
 }
 
+func (s *Scene) MoveEntity(e Entity) {
+	e.JoinScene(s)
+}
+
 func Map[C ComponentData](s *Scene) map[EntityId]C {
 	return View[C](s.registry)
 }
