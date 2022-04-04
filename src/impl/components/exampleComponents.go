@@ -3,12 +3,42 @@ package components
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"math"
 	"time"
 
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
 )
+
+type CanvasComponent struct {
+	Canvas *pixelgl.Canvas
+	Color  color.RGBA
+	Offset pixel.Vec
+	Scale  float64
+}
+
+func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA, winBounds pixel.Rect, camPos pixel.Vec, camZoom float64) {
+	c.Canvas = pixelgl.NewCanvas(bounds)
+	c.Color = color
+
+	c.Offset = winBounds.Center().Sub(camPos)
+	c.Scale = 1 / camZoom
+}
+
+func (c *CanvasComponent) Transform(winBounds pixel.Rect, camPos pixel.Vec, camZoom float64) {
+	c.Offset = winBounds.Center().Sub(camPos)
+	c.Scale = 1 / camZoom
+}
+
+func (c *CanvasComponent) Clear() {
+	c.Canvas.Clear(c.Color)
+}
+
+func (c *CanvasComponent) Draw(target pixel.Target) {
+	c.Canvas.Draw(target, pixel.IM.Moved(c.Offset).Scaled(pixel.ZV, c.Scale))
+}
 
 type TextComponent struct {
 	Txt *text.Text
@@ -26,8 +56,8 @@ func (t *TextComponent) Clear() {
 	t.Txt.Clear()
 }
 
-func (t *TextComponent) Draw(surface pixel.Target) {
-	t.Txt.Draw(surface, pixel.IM.Scaled(t.Txt.Orig, 2))
+func (t *TextComponent) Draw(target pixel.Target) {
+	t.Txt.Draw(target, pixel.IM)
 }
 
 type DrawComponent struct {
@@ -66,14 +96,14 @@ func (d *DrawComponent) ClearFrames() {
 	d.Batch.Clear()
 }
 
-func (d *DrawComponent) Draw(surface pixel.Target) {
-	d.Batch.Draw(surface)
+func (d *DrawComponent) Draw(target pixel.Target) {
+	d.Batch.Draw(target)
 }
 
-func (d *DrawComponent) DrawFrame(frame int, position pixel.Vec, surface pixel.Target) error {
+func (d *DrawComponent) DrawFrame(frame int, position pixel.Vec, target pixel.Target) error {
 	d.Batch.Clear()
 	err := d.PrepareFrame(frame, position)
-	d.Batch.Draw(surface)
+	d.Batch.Draw(target)
 
 	return err
 }

@@ -21,6 +21,12 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 			cameraComponent.Update()
 
 			w.SetMatrix(cameraComponent.Cam)
+
+			for _, drawable := range ecs.GetComponentGroup[components.Drawable](u.Player) {
+				if canvasComponent, ok := drawable.(*components.CanvasComponent); ok {
+					canvasComponent.Transform(w.Bounds(), cameraComponent.CamPos, cameraComponent.CamZoom)
+				}
+			}
 		}
 	}
 }

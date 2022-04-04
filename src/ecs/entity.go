@@ -19,12 +19,12 @@ func (e *Entity) JoinScene(scene *Scene) {
 	e.scene = scene
 }
 
-func HasComponent[C ComponentData](e Entity, c C) bool {
-	return Has(e.scene.registry, e.id, c)
+func HasComponent[C ComponentData](e Entity) bool {
+	return Has[C](e.scene.registry, e.id)
 }
 
-func HasComponentGroup[C ComponentData](e Entity, c C) bool {
-	return HasGroup(e.scene.registry, e.id, c)
+func HasComponentGroup[C ComponentData](e Entity) bool {
+	return HasGroup[C](e.scene.registry, e.id)
 }
 
 func GetComponent[C ComponentData](e Entity) (C, bool) {
@@ -35,11 +35,11 @@ func GetComponentGroup[C ComponentData](e Entity) []C {
 	return GetGroup[C](e.scene.registry, e.id)
 }
 
-func AddComponent[C ComponentData](e Entity, c C) Component[C] {
+func AddComponent[C ComponentData](e Entity, c C) ComponentId {
 	return Link(e.scene.registry, e.id, c)
 }
 
-func AddComponentGroup[C ComponentData](e Entity, c C) ComponentGroup[C] {
+func AddComponentGroup[C ComponentData](e Entity, c C) ComponentId {
 	return Group[C](e.scene.registry, e.id, c)
 }
 

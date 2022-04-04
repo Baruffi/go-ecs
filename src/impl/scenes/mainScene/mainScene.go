@@ -1,6 +1,7 @@
 package mainScene
 
 import (
+	"image/color"
 	"time"
 
 	"example.com/v0/src/ecs"
@@ -22,7 +23,7 @@ type MainUpdater struct {
 
 func (u *MainUpdater) Update(dt float64) {
 	u.PlayerUpdater.Update(u.Window, dt)
-	u.UIUpdater.Update(u.Window, u.Player, dt)
+	u.UIUpdater.Update(u.Window, dt)
 	u.WorldMapUpdater.Update(u.Window, dt)
 	u.CountryUpdater.Update(u.Window, dt)
 }
@@ -46,30 +47,33 @@ func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec) ecs
 }
 
 func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
-	cameraComponent := &components.CameraComponent{
+	mainCamera := &components.CameraComponent{
 		CamPos:       pixel.ZV,
 		CamSpeed:     500.0,
 		CamZoom:      1.0,
 		CamZoomSpeed: 1.2,
 		Active:       true,
 	}
-
-	timeComponent := &components.TimeComponent{
+	UICanvas := &components.CanvasComponent{}
+	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0}, win.Bounds(), mainCamera.CamPos, mainCamera.CamZoom)
+	worldTime := &components.TimeComponent{
 		Ticker: time.NewTicker(time.Second),
 		Format: "Mon, 02 Jan 2006 15:04:05 MST",
 	}
-	textComponent := &components.TextComponent{}
+	worldClock := &components.TextComponent{}
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	textComponent.Init(pixel.V(10, 10), atlas)
+	worldClock.Init(pixel.V(10, 10), atlas)
 
 	UI := s.CreateEntity()
 
-	ecs.AddComponent(UI, timeComponent)
-	ecs.AddComponentGroup[components.UIElement](UI, textComponent)
+	ecs.AddComponent(UI, UICanvas)
+	ecs.AddComponent(UI, worldTime)
+	ecs.AddComponentGroup[components.UIElement](UI, worldClock)
 
 	Player := s.CreateEntity()
 
-	ecs.AddComponent(Player, cameraComponent)
+	ecs.AddComponent(Player, mainCamera)
+	ecs.AddComponentGroup[components.Drawable](Player, UICanvas)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
 	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV)
