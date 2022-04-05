@@ -15,59 +15,44 @@ func NewEntityGroup() EntityGroup {
 	}
 }
 
-func (g *EntityGroup) HasMember(e Entity) bool {
+func (g EntityGroup) HasMember(e Entity) bool {
 	_, ok := g.members[e.id]
 	return ok
 }
 
-func (g *EntityGroup) AddMember(e Entity) {
+func (g EntityGroup) AddMember(e Entity) {
 	g.members[e.id] = e
 }
 
-func (g *EntityGroup) RemoveMember(e Entity) {
+func (g EntityGroup) RemoveMember(e Entity) {
 	delete(g.members, e.id)
 }
 
-func (g *EntityGroup) Clear() {
-	g.members = make(map[EntityId]Entity)
-}
-
-func (g *EntityGroup) JoinScene(scene *Scene) {
+func (g EntityGroup) JoinScene(scene *Scene) {
 	for _, e := range g.members {
 		e.JoinScene(scene)
 	}
 }
 
-func HasComponents[D ComponentData](g EntityGroup) (hasComponent bool) {
+func HasComponents[D ComponentData](g EntityGroup, is ...TypedComponentId[D]) (hasComponent bool) {
 	for _, e := range g.members {
-		hasComponent = hasComponent && Has[D](e.scene.registry, e.id)
+		hasComponent = hasComponent && HasComponent(e, is...)
 	}
 	return hasComponent
 }
 
-func HasComponentGroups[D ComponentData](g EntityGroup) (hasGroup bool) {
+func HasComponentGroups[D ComponentData](g EntityGroup, is ...TypedComponentGroupId[D]) (hasGroup bool) {
 	for _, e := range g.members {
-		hasGroup = hasGroup && HasGroup[D](e.scene.registry, e.id)
+		hasGroup = hasGroup && HasComponentGroup(e, is...)
 	}
 	return hasGroup
 }
 
 func GetComponents[D ComponentData](g EntityGroup, is ...TypedComponentId[D]) []D {
 	components := make([]D, 0)
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		for _, e := range g.members {
-			if c, ok := GetById(e.scene.registry, is[0], e.id); ok {
-				components = append(components, c)
-			}
-		}
-	default:
-		for _, e := range g.members {
-			if c, ok := Get[D](e.scene.registry, e.id); ok {
-				components = append(components, c)
-			}
+	for _, e := range g.members {
+		if d, ok := GetComponent(e, is...); ok {
+			components = append(components, d)
 		}
 	}
 	return components
@@ -75,60 +60,34 @@ func GetComponents[D ComponentData](g EntityGroup, is ...TypedComponentId[D]) []
 
 func GetComponentGroups[D ComponentData](g EntityGroup, is ...TypedComponentGroupId[D]) []D {
 	components := make([]D, 0)
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		for _, e := range g.members {
-			components = append(components, GetGroupById(e.scene.registry, is[0], e.id)...)
-		}
-		return components
-	default:
-		for _, e := range g.members {
-			components = append(components, GetGroup[D](e.scene.registry, e.id)...)
-		}
+	for _, e := range g.members {
+		components = append(components, GetComponentGroup(e, is...)...)
 	}
 	return components
 }
 
-func AddComponents[D ComponentData](g EntityGroup, c D) (typedComponentId TypedComponentId[D]) {
+func AddComponents[D ComponentData](g EntityGroup, d D) (typedComponentId TypedComponentId[D]) {
 	for _, e := range g.members {
-		typedComponentId = Link(e.scene.registry, e.id, c)
+		typedComponentId = AddComponent(e, d)
 	}
 	return typedComponentId
 }
 
-func AddComponentGroups[D ComponentData](g EntityGroup, c D) (typedGroupId TypedComponentGroupId[D]) {
+func AddComponentGroups[D ComponentData](g EntityGroup, d D) (typedGroupId TypedComponentGroupId[D]) {
 	for _, e := range g.members {
-		typedGroupId = Group[D](e.scene.registry, e.id, c)
+		typedGroupId = AddComponentGroup(e, d)
 	}
 	return typedGroupId
 }
 
-func RemoveComponents[D ComponentData](g EntityGroup) {
+func RemoveComponents[D ComponentData](g EntityGroup, is ...TypedComponentId[D]) {
 	for _, e := range g.members {
-		Unlink[D](e.scene.registry, e.id)
+		RemoveComponent(e, is...)
 	}
 }
 
-func RemoveComponentGroups[D ComponentData](g EntityGroup) {
+func RemoveComponentGroups[D ComponentData](g EntityGroup, is ...TypedComponentGroupId[D]) {
 	for _, e := range g.members {
-		Ungroup[D](e.scene.registry, e.id)
-	}
-}
-
-func ClearComponentTypes[D ComponentData](g EntityGroup) {
-	for _, e := range g.members {
-		ClearType[D](e.scene.registry)
-		// Clear operations only need to happen once
-		break
-	}
-}
-
-func ClearComponentGroups[D ComponentData](g EntityGroup) {
-	for _, e := range g.members {
-		ClearGroup[D](e.scene.registry)
-		// Clear operations only need to happen once
-		break
+		RemoveComponentGroup(e, is...)
 	}
 }

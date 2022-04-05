@@ -23,7 +23,7 @@ func NewEntityFactory(s *Scene, prefab Prefab[Entity]) EntityFactory {
 	}
 }
 
-func (f *EntityFactory) Generate() Entity {
+func (f EntityFactory) Generate() Entity {
 	e := f.s.CreateEntity()
 	f.Configure(e)
 	return e

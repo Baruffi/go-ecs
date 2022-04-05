@@ -15,16 +15,16 @@ func NewEntity(scene *Scene) Entity {
 	}
 }
 
-func (e *Entity) JoinScene(scene *Scene) {
-	e.scene = scene
+func (e Entity) JoinScene(scene *Scene) {
+	*e.scene = *scene
 }
 
-func AddComponent[D ComponentData](e Entity, c D) TypedComponentId[D] {
-	return Link(e.scene.registry, e.id, c)
+func AddComponent[D ComponentData](e Entity, d D) TypedComponentId[D] {
+	return Link(e.scene.registry, e.id, d)
 }
 
-func AddComponentGroup[D ComponentData](e Entity, c D) TypedComponentGroupId[D] {
-	return Group[D](e.scene.registry, e.id, c)
+func AddComponentGroup[D ComponentData](e Entity, d D) TypedComponentGroupId[D] {
+	return Group[D](e.scene.registry, e.id, d)
 }
 
 func HasComponent[D ComponentData](e Entity, is ...TypedComponentId[D]) bool {

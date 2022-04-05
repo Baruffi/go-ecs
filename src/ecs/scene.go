@@ -29,6 +29,10 @@ func (s *Scene) CreateEntity() Entity {
 	return e
 }
 
+func (s *Scene) ClearEntity(e Entity) {
+	ClearEntity(s.registry, e.id)
+}
+
 func (s *Scene) Clear() {
 	s.registry.Clear()
 }

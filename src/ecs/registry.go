@@ -95,7 +95,7 @@ func Link[D ComponentData](r *Registry, e EntityId, d D) TypedComponentId[D] {
 func Group[D ComponentData](r *Registry, e EntityId, d ComponentData) TypedComponentGroupId[D] {
 	g, _ := getComponentGroup[D](r)
 	c := NewComponent[D]()
-	c.data[e] = d.(D)
+	c.Set(e, d)
 	g.members[c.id] = c
 	r.SetGroup(g)
 	return TypedComponentGroupId[D](g.id)
