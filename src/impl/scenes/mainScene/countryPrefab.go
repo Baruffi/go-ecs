@@ -23,7 +23,7 @@ func (p *CountryPrefab) Update(frame int, position pixel.Vec, orig pixel.Vec) {
 
 func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	drawComponent := &components.DrawComponent{}
-	spritesheet, err := scenes.LoadPicture("src/impl/scenes/mainScene/countries.png")
+	spritesheet, err := scenes.LoadPicture("src/assets/countries.png")
 	if err != nil {
 		panic(err)
 	}

@@ -12,27 +12,73 @@ import (
 	"github.com/faiface/pixel/text"
 )
 
+type TransformableComponent struct {
+	Matrix pixel.Matrix
+}
+
+func (t *TransformableComponent) Transform(ref pixel.Vec, delta pixel.Vec, deltaZoom float64) {
+	t.Matrix = t.Matrix.Chained(pixel.IM.Scaled(ref, deltaZoom).Moved(delta))
+}
+
+func (t *TransformableComponent) InverseTransform(ref pixel.Vec, delta pixel.Vec, deltaZoom float64, totalZoom float64) {
+	t.Matrix = t.Matrix.Chained(pixel.IM.Moved(pixel.ZV.Sub(delta.Scaled(1/totalZoom))).Scaled(ref, 1/deltaZoom))
+}
+
+func (t *TransformableComponent) Project(position pixel.Vec) pixel.Vec {
+	return t.Matrix.Project(position)
+}
+
+func (t *TransformableComponent) Unproject(position pixel.Vec) pixel.Vec {
+	return t.Matrix.Unproject(position)
+}
+
+type CameraComponent struct {
+	TransformableComponent
+	CamDelta     pixel.Vec
+	CamDeltaZoom float64
+	CamZoom      float64
+	CamZoomSpeed float64
+	Active       bool
+}
+
+func (c *CameraComponent) Init(zoom float64, zoomSpeed float64, active bool) {
+	c.TransformableComponent = TransformableComponent{
+		Matrix: pixel.IM,
+	}
+	c.CamDelta = pixel.ZV
+	c.CamDeltaZoom = 1.0
+	c.CamZoom = zoom
+	c.CamZoomSpeed = zoomSpeed
+	c.Active = active
+}
+
+func (c *CameraComponent) Toggle() {
+	c.Active = !c.Active
+}
+
+func (c *CameraComponent) Scroll(scroll pixel.Vec) {
+	c.CamDeltaZoom = math.Pow(c.CamZoomSpeed, scroll.Y)
+	c.CamZoom *= c.CamDeltaZoom
+}
+
+func (c *CameraComponent) Move(delta pixel.Vec) {
+	c.CamDelta = delta
+}
+
+func (c *CameraComponent) Update(center pixel.Vec) {
+	c.Transform(center, c.CamDelta, c.CamDeltaZoom)
+}
+
 type CanvasComponent struct {
+	TransformableComponent
 	Canvas *pixelgl.Canvas
 	Color  color.RGBA
-	Center pixel.Vec
-	Offset pixel.Vec
-	Scale  float64
 }
 
-func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA, center pixel.Vec, camPos pixel.Vec, camZoom float64) {
+func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA) {
 	c.Canvas = pixelgl.NewCanvas(bounds)
+	c.Matrix = pixel.IM.Moved(bounds.Center())
 	c.Color = color
-
-	c.Center = center
-	c.Offset = center.Sub(camPos)
-	c.Scale = 1 / camZoom
-}
-
-func (c *CanvasComponent) Transform(center pixel.Vec, camPos pixel.Vec, camZoom float64) {
-	c.Center = center
-	c.Offset = center.Sub(camPos)
-	c.Scale = 1 / camZoom
 }
 
 func (c *CanvasComponent) Clear() {
@@ -40,27 +86,7 @@ func (c *CanvasComponent) Clear() {
 }
 
 func (c *CanvasComponent) Draw(target pixel.Target) {
-	c.Canvas.Draw(target, pixel.IM.Moved(c.Offset).Scaled(c.Center, c.Scale))
-}
-
-type TextComponent struct {
-	Txt *text.Text
-}
-
-func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas) {
-	t.Txt = text.New(orig, atlas)
-}
-
-func (t *TextComponent) Write(str string) {
-	fmt.Fprintln(t.Txt, str)
-}
-
-func (t *TextComponent) Clear() {
-	t.Txt.Clear()
-}
-
-func (t *TextComponent) Draw(target pixel.Target) {
-	t.Txt.Draw(target, pixel.IM)
+	c.Canvas.Draw(target, c.Matrix)
 }
 
 type DrawComponent struct {
@@ -111,43 +137,35 @@ func (d *DrawComponent) DrawFrame(frame int, position pixel.Vec, target pixel.Ta
 	return err
 }
 
-type CameraComponent struct {
-	Cam          pixel.Matrix
-	CamPos       pixel.Vec
-	CamSpeed     float64
-	CamZoom      float64
-	CamZoomSpeed float64
-	Active       bool
+type TextComponent struct {
+	Txt *text.Text
 }
 
-func (c *CameraComponent) Toggle() {
-	c.Active = !c.Active
+func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas) {
+	t.Txt = text.New(orig, atlas)
 }
 
-func (c *CameraComponent) Scroll(scroll pixel.Vec) {
-	c.CamZoom *= math.Pow(c.CamZoomSpeed, scroll.Y)
+func (t *TextComponent) Write(str string) {
+	fmt.Fprintln(t.Txt, str)
 }
 
-func (c *CameraComponent) Move(delta pixel.Vec) {
-	c.CamPos = c.CamPos.Add(delta)
+func (t *TextComponent) Clear() {
+	t.Txt.Clear()
 }
 
-func (c *CameraComponent) Update(center pixel.Vec) {
-	c.Cam = pixel.IM.Scaled(center, c.CamZoom).Moved(c.CamPos)
-}
-
-func (c *CameraComponent) Project(position pixel.Vec) pixel.Vec {
-	return c.Cam.Project(position)
-}
-
-func (c *CameraComponent) Unproject(position pixel.Vec) pixel.Vec {
-	return c.Cam.Unproject(position)
+func (t *TextComponent) Draw(target pixel.Target) {
+	t.Txt.Draw(target, pixel.IM)
 }
 
 type TimeComponent struct {
 	Time   time.Time
 	Ticker *time.Ticker
 	Format string
+}
+
+func (t *TimeComponent) Init(format string) {
+	t.Ticker = time.NewTicker(time.Second)
+	t.Format = format
 }
 
 func (t *TimeComponent) String() string {

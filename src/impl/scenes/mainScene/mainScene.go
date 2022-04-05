@@ -2,7 +2,6 @@ package mainScene
 
 import (
 	"image/color"
-	"time"
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
@@ -47,31 +46,24 @@ func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec) ecs
 }
 
 func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
-	mainCamera := &components.CameraComponent{
-		CamPos:       pixel.ZV,
-		CamSpeed:     500.0,
-		CamZoom:      1.0,
-		CamZoomSpeed: 1.2,
-		Active:       true,
-	}
+	mainCamera := &components.CameraComponent{}
+	mainCamera.Init(1.0, 1.2, true)
+
 	UICanvas := &components.CanvasComponent{}
-	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0}, win.Bounds().Center(), mainCamera.CamPos, mainCamera.CamZoom)
-	worldTime := &components.TimeComponent{
-		Ticker: time.NewTicker(time.Second),
-		Format: "Mon, 02 Jan 2006 15:04:05 MST",
-	}
+	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+	worldTime := &components.TimeComponent{}
+	worldTime.Init("Mon, 02 Jan 2006 15:04:05 MST")
+
 	worldClock := &components.TextComponent{}
-	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	worldClock.Init(pixel.V(10, 10), atlas)
+	worldClock.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII))
 
 	UI := s.CreateEntity()
-
 	ecs.AddComponent(UI, UICanvas)
 	ecs.AddComponent(UI, worldTime)
 	ecs.AddComponentGroup[components.UIElement](UI, worldClock)
 
 	Player := s.CreateEntity()
-
 	ecs.AddComponent(Player, mainCamera)
 	ecs.AddComponentGroup[components.Drawable](Player, UICanvas)
 
