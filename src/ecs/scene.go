@@ -29,22 +29,50 @@ func (s *Scene) CreateEntity() Entity {
 	return e
 }
 
-func (s *Scene) MoveEntity(e Entity) {
-	e.JoinScene(s)
+func (s *Scene) Clear() {
+	s.registry.Clear()
 }
 
 func Map[C ComponentData](s *Scene, is ...TypedComponentId[C]) map[EntityId]C {
-	// Since only 1 id per type will exist in the registry, there should be no use case with multiple ids as args. Using ... as an optional notation
-	for _, i := range is {
-		return ViewById(s.registry, i)
+	switch {
+	case len(is) > 1:
+		panic("More than 1 component id for component type is not allowed")
+	case len(is) == 1:
+		return ViewById(s.registry, is[0])
+	default:
+		return View[C](s.registry)
 	}
-	return View[C](s.registry)
 }
 
 func MapGroup[C ComponentData](s *Scene, is ...TypedComponentGroupId[C]) []map[EntityId]C {
-	// Since only 1 id per type will exist in the registry, there should be no use case with multiple ids as args. Using ... as an optional notation
-	for _, i := range is {
-		return ViewGroupById(s.registry, i)
+	switch {
+	case len(is) > 1:
+		panic("More than 1 component id for component type is not allowed")
+	case len(is) == 1:
+		return ViewGroupById(s.registry, is[0])
+	default:
+		return ViewGroup[C](s.registry)
 	}
-	return ViewGroup[C](s.registry)
+}
+
+func ClearComponentType[C ComponentData](s *Scene, is ...TypedComponentId[C]) {
+	switch {
+	case len(is) > 1:
+		panic("More than 1 component id for component type is not allowed")
+	case len(is) == 1:
+		ClearTypeById(s.registry, is[0])
+	default:
+		ClearType[C](s.registry)
+	}
+}
+
+func ClearComponentGroup[C ComponentData](s *Scene, is ...TypedComponentGroupId[C]) {
+	switch {
+	case len(is) > 1:
+		panic("More than 1 component id for component type is not allowed")
+	case len(is) == 1:
+		ClearGroupById(s.registry, is[0])
+	default:
+		ClearGroup[C](s.registry)
+	}
 }

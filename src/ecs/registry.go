@@ -1,9 +1,20 @@
 package ecs
 
 type AnyComponentGroup interface {
+	GetId() ComponentGroupId
+	Has(EntityId) bool
+	Get(EntityId) []ComponentData
+	Set(AnyComponent)
+	Unset(ComponentId)
+	UnsetEntity(EntityId)
 }
 
 type AnyComponent interface {
+	GetId() ComponentId
+	Has(EntityId) bool
+	Get(EntityId) (ComponentData, bool)
+	Set(EntityId, ComponentData)
+	Unset(EntityId)
 }
 
 type Registry struct {
@@ -19,118 +30,186 @@ func NewRegistry() *Registry {
 	}
 }
 
-// getComponent - Find or create a component of type C
-func getComponent[C ComponentData](r *Registry) (Component[C], bool) {
-	for _, v := range r.components {
-		if vc, ok := v.(Component[C]); ok {
-			return vc, true
-		}
-	}
-	vc := NewComponent[C]()
-	return vc, false
+func (r *Registry) HasComponent(c ComponentId) bool {
+	_, ok := r.components[c]
+	return ok
 }
 
-// getComponentGroup - Find or create a component group of type C
-func getComponentGroup[C ComponentData](r *Registry) (ComponentGroup[C], bool) {
-	for _, v := range r.componentGroups {
-		if vg, ok := v.(ComponentGroup[C]); ok {
-			return vg, true
+func (r *Registry) HasGroup(g ComponentGroupId) bool {
+	_, ok := r.componentGroups[g]
+	return ok
+}
+
+func (r *Registry) SetComponent(c AnyComponent) {
+	r.components[c.GetId()] = c
+}
+
+func (r *Registry) SetGroup(g AnyComponentGroup) {
+	r.componentGroups[g.GetId()] = g
+}
+
+func (r *Registry) UnsetComponent(c ComponentId) {
+	delete(r.components, c)
+}
+
+func (r *Registry) UnsetGroup(g ComponentGroupId) {
+	delete(r.componentGroups, g)
+}
+
+func (r *Registry) Clear() {
+	r.componentGroups = make(map[ComponentGroupId]AnyComponentGroup)
+	r.components = make(map[ComponentId]AnyComponent)
+}
+
+// getComponent - Find or create a component of type D
+func getComponent[D ComponentData](r *Registry) (Component[D], bool) {
+	for _, v := range r.components {
+		if c, ok := v.(Component[D]); ok {
+			return c, true
 		}
 	}
-	vg := NewComponentGroup[C]()
-	return vg, false
+	c := NewComponent[D]()
+	return c, false
+}
+
+// getComponentGroup - Find or create a component group of type D
+func getComponentGroup[D ComponentData](r *Registry) (ComponentGroup[D], bool) {
+	for _, v := range r.componentGroups {
+		if g, ok := v.(ComponentGroup[D]); ok {
+			return g, true
+		}
+	}
+	g := NewComponentGroup[D]()
+	return g, false
+}
+
+// Link - Links the component to the respective entity inside the registry
+func Link[D ComponentData](r *Registry, e EntityId, d D) TypedComponentId[D] {
+	c, _ := getComponent[D](r)
+	c.data[e] = d
+	r.SetComponent(c)
+	return TypedComponentId[D](c.id)
+}
+
+// Group - Links the component to the respective entity inside the group
+func Group[D ComponentData](r *Registry, e EntityId, d ComponentData) TypedComponentGroupId[D] {
+	g, _ := getComponentGroup[D](r)
+	c := NewComponent[D]()
+	c.data[e] = d.(D)
+	g.members[c.id] = c
+	r.SetGroup(g)
+	return TypedComponentGroupId[D](g.id)
 }
 
 // Has - Checks if component exists in the registry and is linked to the entity
-func Has[C ComponentData](r *Registry, e EntityId) bool {
-	if vc, ok := getComponent[C](r); ok {
-		_, ok := vc.data[e]
-		return ok
+func Has[D ComponentData](r *Registry, e EntityId) bool {
+	if c, ok := getComponent[D](r); ok {
+		return c.Has(e)
 	}
 	return false
 }
 
 // HasGroup - Checks if group exists in the registry and contains the entity
-func HasGroup[C ComponentData](r *Registry, e EntityId) bool {
-	if vg, ok := getComponentGroup[C](r); ok {
-		for _, vc := range vg.members {
-			if _, ok := vc.data[e]; ok {
-				return true
-			}
+func HasGroup[D ComponentData](r *Registry, e EntityId) bool {
+	if g, ok := getComponentGroup[D](r); ok {
+		return g.Has(e)
+	}
+	return false
+}
+
+// HasById - Checks if component exists in the registry by id and is linked to the entity
+func HasById[D ComponentData](r *Registry, i TypedComponentId[D], e EntityId) bool {
+	if c, ok := r.components[ComponentId(i)]; ok {
+		if c.Has(e) {
+			return true
 		}
 	}
 	return false
 }
 
-// Link - Links the component to the respective entity inside the registry
-func Link[C ComponentData](r *Registry, e EntityId, c C) TypedComponentId[C] {
-	vc, _ := getComponent[C](r)
-	vc.data[e] = c
-	r.components[vc.id] = vc
-	return TypedComponentId[C](vc.id)
-}
-
-// Group - Links the component to the respective entity inside the group
-func Group[C ComponentData](r *Registry, e EntityId, c ComponentData) TypedComponentGroupId[C] {
-	vg, _ := getComponentGroup[C](r)
-	vc := NewComponent[C]()
-	vc.data[e] = c.(C)
-	vg.members[vc.id] = vc
-	r.componentGroups[vg.id] = vg
-	return TypedComponentGroupId[C](vg.id)
+// HasGroupById - Checks if group exists in the registry by id and contains the entity
+func HasGroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D], e EntityId) bool {
+	if g, ok := r.componentGroups[ComponentGroupId(i)]; ok {
+		if g.Has(e) {
+			return true
+		}
+	}
+	return false
 }
 
 // Unlink - Unlinks the component type from the respective entity inside the registry (if they were not linked, this is a no-op)
-func Unlink[C ComponentData](r *Registry, e EntityId) {
-	if vc, ok := getComponent[C](r); ok {
-		delete(vc.data, e)
+func Unlink[D ComponentData](r *Registry, e EntityId) {
+	if c, ok := getComponent[D](r); ok {
+		c.Unset(e)
 	}
 }
 
 // Ungroup - Removes all instances of entity e from group
-func Ungroup[C ComponentData](r *Registry, e EntityId) {
-	if vg, ok := getComponentGroup[C](r); ok {
-		for _, vc := range vg.members {
-			delete(vc.data, e)
-		}
+func Ungroup[D ComponentData](r *Registry, e EntityId) {
+	if g, ok := getComponentGroup[D](r); ok {
+		g.UnsetEntity(e)
 	}
 }
 
-// ClearType - Removes all instances of a component type from the respective the registry
-func ClearType[C ComponentData](r *Registry) {
-	if vc, ok := getComponent[C](r); ok {
-		delete(r.components, vc.id)
+// UnlinkById - Unlinks the component of id i from the respective entity inside the registry (if they were not linked, this is a no-op)
+func UnlinkById[D ComponentData](r *Registry, i TypedComponentId[D], e EntityId) {
+	r.components[ComponentId(i)].Unset(e)
+}
+
+// Ungroup - Removes all instances of entity e from group of id i
+func UngroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D], e EntityId) {
+	r.componentGroups[ComponentGroupId(i)].UnsetEntity(e)
+}
+
+// ClearType - Removes component type from the respective the registry
+func ClearType[D ComponentData](r *Registry) {
+	if c, ok := getComponent[D](r); ok {
+		r.UnsetComponent(c.id)
 	}
 }
 
-// ClearGroup - Removes all instances of a component group from the respective the registry
-func ClearGroup[C ComponentData](r *Registry) {
-	if vg, ok := getComponentGroup[C](r); ok {
-		delete(r.componentGroups, vg.id)
+// ClearGroup - Removes component group from the respective the registry
+func ClearGroup[D ComponentData](r *Registry) {
+	if g, ok := getComponentGroup[D](r); ok {
+		r.UnsetGroup(g.id)
 	}
 }
 
-// Clear - Fully clears the respective the registry
-func Clear(r *Registry) {
-	r.componentGroups = make(map[ComponentGroupId]AnyComponentGroup)
-	r.components = make(map[ComponentId]AnyComponent)
+// ClearTypeById - Removes component of id i from the respective registry
+func ClearTypeById[D ComponentData](r *Registry, i TypedComponentId[D]) {
+	r.UnsetComponent(ComponentId(i))
+}
+
+// ClearGroupById - Removes group of id i from the respective registry
+func ClearGroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D]) {
+	r.UnsetGroup(ComponentGroupId(i))
+}
+
+// ClearEntity - Removes all instances of an entity from the respective the registry
+func ClearEntity(r *Registry, e EntityId) {
+	for _, c := range r.componentGroups {
+		c.UnsetEntity(e)
+	}
+	for _, c := range r.components {
+		c.Unset(e)
+	}
 }
 
 // View - gets all entities from the component type
-func View[C ComponentData](r *Registry) map[EntityId]C {
-	if vc, ok := getComponent[C](r); ok {
-		return vc.data
+func View[D ComponentData](r *Registry) map[EntityId]D {
+	if c, ok := getComponent[D](r); ok {
+		return c.data
 	}
 
 	return nil
 }
 
 // ViewGroup - gets all entities from the component group
-func ViewGroup[C ComponentData](r *Registry) []map[EntityId]C {
-	group := make([]map[EntityId]C, 0)
-	if vg, ok := getComponentGroup[C](r); ok {
-		for _, vc := range vg.members {
-			group = append(group, vc.data)
+func ViewGroup[D ComponentData](r *Registry) []map[EntityId]D {
+	group := make([]map[EntityId]D, 0)
+	if g, ok := getComponentGroup[D](r); ok {
+		for _, c := range g.members {
+			group = append(group, c.data)
 		}
 	}
 
@@ -138,20 +217,20 @@ func ViewGroup[C ComponentData](r *Registry) []map[EntityId]C {
 }
 
 // ViewById - gets all entities from the component type by id
-func ViewById[C ComponentData](r *Registry, i TypedComponentId[C]) map[EntityId]C {
-	if vc, ok := r.components[ComponentId(i)].(Component[C]); ok {
-		return vc.data
+func ViewById[D ComponentData](r *Registry, i TypedComponentId[D]) map[EntityId]D {
+	if c, ok := r.components[ComponentId(i)].(Component[D]); ok {
+		return c.data
 	}
 
 	return nil
 }
 
 // ViewGroupById - gets all entities from the component group by id
-func ViewGroupById[C ComponentData](r *Registry, i TypedComponentGroupId[C]) []map[EntityId]C {
-	group := make([]map[EntityId]C, 0)
-	if vg, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[C]); ok {
-		for _, vc := range vg.members {
-			group = append(group, vc.data)
+func ViewGroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D]) []map[EntityId]D {
+	group := make([]map[EntityId]D, 0)
+	if g, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[D]); ok {
+		for _, c := range g.members {
+			group = append(group, c.data)
 		}
 	}
 
@@ -159,21 +238,21 @@ func ViewGroupById[C ComponentData](r *Registry, i TypedComponentGroupId[C]) []m
 }
 
 // Get - gets specific component data by its type and parent entity id (or returns the default value)
-func Get[C ComponentData](r *Registry, e EntityId) (c C, ok bool) {
-	vc, ok := getComponent[C](r)
+func Get[D ComponentData](r *Registry, e EntityId) (d D, ok bool) {
+	c, ok := getComponent[D](r)
 	if ok {
-		c, ok = vc.data[e]
+		d, ok = c.data[e]
 	}
 
-	return c, ok
+	return d, ok
 }
 
 // GetGroup - gets specific component data group by its group and parent entity id
-func GetGroup[C ComponentData](r *Registry, e EntityId) []C {
-	group := make([]C, 0)
-	if vg, ok := getComponentGroup[C](r); ok {
-		for _, vc := range vg.members {
-			group = append(group, vc.data[e])
+func GetGroup[D ComponentData](r *Registry, e EntityId) []D {
+	group := make([]D, 0)
+	if g, ok := getComponentGroup[D](r); ok {
+		for _, c := range g.members {
+			group = append(group, c.data[e])
 		}
 	}
 
@@ -181,21 +260,21 @@ func GetGroup[C ComponentData](r *Registry, e EntityId) []C {
 }
 
 // GetById - gets specific component data by its component id and parent entity id (or returns the default value)
-func GetById[C ComponentData](r *Registry, i TypedComponentId[C], e EntityId) (c C, ok bool) {
-	vc, ok := r.components[ComponentId(i)].(Component[C])
+func GetById[D ComponentData](r *Registry, i TypedComponentId[D], e EntityId) (d D, ok bool) {
+	c, ok := r.components[ComponentId(i)].(Component[D])
 	if ok {
-		c, ok = vc.data[e]
+		d, ok = c.data[e]
 	}
 
-	return c, ok
+	return d, ok
 }
 
 // GetGroupById - gets specific component data group by its group id and parent entity id
-func GetGroupById[C ComponentData](r *Registry, i TypedComponentGroupId[C], e EntityId) []C {
-	group := make([]C, 0)
-	if vg, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[C]); ok {
-		for _, vc := range vg.members {
-			group = append(group, vc.data[e])
+func GetGroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D], e EntityId) []D {
+	group := make([]D, 0)
+	if g, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[D]); ok {
+		for _, c := range g.members {
+			group = append(group, c.data[e])
 		}
 	}
 
