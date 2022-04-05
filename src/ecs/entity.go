@@ -19,76 +19,76 @@ func (e *Entity) JoinScene(scene *Scene) {
 	e.scene = scene
 }
 
-func AddComponent[C ComponentData](e Entity, c C) TypedComponentId[C] {
+func AddComponent[D ComponentData](e Entity, c D) TypedComponentId[D] {
 	return Link(e.scene.registry, e.id, c)
 }
 
-func AddComponentGroup[C ComponentData](e Entity, c C) TypedComponentGroupId[C] {
-	return Group[C](e.scene.registry, e.id, c)
+func AddComponentGroup[D ComponentData](e Entity, c D) TypedComponentGroupId[D] {
+	return Group[D](e.scene.registry, e.id, c)
 }
 
-func HasComponent[C ComponentData](e Entity, is ...TypedComponentId[C]) bool {
+func HasComponent[D ComponentData](e Entity, is ...TypedComponentId[D]) bool {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return HasById(e.scene.registry, is[0], e.id)
 	default:
-		return Has[C](e.scene.registry, e.id)
+		return Has[D](e.scene.registry, e.id)
 	}
 }
 
-func HasComponentGroup[C ComponentData](e Entity, is ...TypedComponentGroupId[C]) bool {
+func HasComponentGroup[D ComponentData](e Entity, is ...TypedComponentGroupId[D]) bool {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return HasGroupById(e.scene.registry, is[0], e.id)
 	default:
-		return HasGroup[C](e.scene.registry, e.id)
+		return HasGroup[D](e.scene.registry, e.id)
 	}
 }
 
-func GetComponent[C ComponentData](e Entity, is ...TypedComponentId[C]) (C, bool) {
+func GetComponent[D ComponentData](e Entity, is ...TypedComponentId[D]) (D, bool) {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return GetById(e.scene.registry, is[0], e.id)
 	default:
-		return Get[C](e.scene.registry, e.id)
+		return Get[D](e.scene.registry, e.id)
 	}
 }
 
-func GetComponentGroup[C ComponentData](e Entity, is ...TypedComponentGroupId[C]) []C {
+func GetComponentGroup[D ComponentData](e Entity, is ...TypedComponentGroupId[D]) []D {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return GetGroupById(e.scene.registry, is[0], e.id)
 	default:
-		return GetGroup[C](e.scene.registry, e.id)
+		return GetGroup[D](e.scene.registry, e.id)
 	}
 }
 
-func RemoveComponent[C ComponentData](e Entity, is ...TypedComponentId[C]) {
+func RemoveComponent[D ComponentData](e Entity, is ...TypedComponentId[D]) {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		UnlinkById(e.scene.registry, is[0], e.id)
 	default:
-		Unlink[C](e.scene.registry, e.id)
+		Unlink[D](e.scene.registry, e.id)
 	}
 }
 
-func RemoveComponentGroup[C ComponentData](e Entity, is ...TypedComponentGroupId[C]) {
+func RemoveComponentGroup[D ComponentData](e Entity, is ...TypedComponentGroupId[D]) {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		UngroupById(e.scene.registry, is[0], e.id)
 	default:
-		Ungroup[C](e.scene.registry, e.id)
+		Ungroup[D](e.scene.registry, e.id)
 	}
 }

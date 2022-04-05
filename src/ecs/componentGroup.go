@@ -2,26 +2,26 @@ package ecs
 
 type ComponentGroupId string
 
-type TypedComponentGroupId[C ComponentData] ComponentGroupId
+type TypedComponentGroupId[D ComponentData] ComponentGroupId
 
-type ComponentGroup[C ComponentData] struct {
+type ComponentGroup[D ComponentData] struct {
 	id      ComponentGroupId
-	members map[ComponentId]Component[C]
+	members map[ComponentId]Component[D]
 }
 
 // NewComponentGroup - Creates a new ComponentGroup filling in required initialization parameters
-func NewComponentGroup[C ComponentData]() ComponentGroup[C] {
-	return ComponentGroup[C]{
+func NewComponentGroup[D ComponentData]() ComponentGroup[D] {
+	return ComponentGroup[D]{
 		id:      ComponentGroupId(GenerateId()),
-		members: make(map[ComponentId]Component[C]),
+		members: make(map[ComponentId]Component[D]),
 	}
 }
 
-func (g ComponentGroup[C]) GetId() ComponentGroupId {
+func (g ComponentGroup[D]) GetId() ComponentGroupId {
 	return g.id
 }
 
-func (g ComponentGroup[C]) Has(e EntityId) bool {
+func (g ComponentGroup[D]) Has(e EntityId) bool {
 	for _, c := range g.members {
 		if c.Has(e) {
 			return true
@@ -30,7 +30,7 @@ func (g ComponentGroup[C]) Has(e EntityId) bool {
 	return false
 }
 
-func (g ComponentGroup[C]) Get(e EntityId) []ComponentData {
+func (g ComponentGroup[D]) Get(e EntityId) []ComponentData {
 	ds := make([]ComponentData, 0)
 	for _, c := range g.members {
 		if d, ok := c.Get(e); ok {
@@ -40,15 +40,15 @@ func (g ComponentGroup[C]) Get(e EntityId) []ComponentData {
 	return ds
 }
 
-func (g ComponentGroup[C]) Set(c AnyComponent) {
-	g.members[c.GetId()] = c.(Component[C])
+func (g ComponentGroup[D]) Set(c AnyComponent) {
+	g.members[c.GetId()] = c.(Component[D])
 }
 
-func (g ComponentGroup[C]) Unset(c ComponentId) {
+func (g ComponentGroup[D]) Unset(c ComponentId) {
 	delete(g.members, c)
 }
 
-func (g ComponentGroup[C]) UnsetEntity(e EntityId) {
+func (g ComponentGroup[D]) UnsetEntity(e EntityId) {
 	for _, c := range g.members {
 		c.Unset(e)
 	}
