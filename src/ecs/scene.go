@@ -33,46 +33,46 @@ func (s *Scene) Clear() {
 	s.registry.Clear()
 }
 
-func Map[C ComponentData](s *Scene, is ...TypedComponentId[C]) map[EntityId]C {
+func Map[D ComponentData](s *Scene, is ...TypedComponentId[D]) map[EntityId]D {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return ViewById(s.registry, is[0])
 	default:
-		return View[C](s.registry)
+		return View[D](s.registry)
 	}
 }
 
-func MapGroup[C ComponentData](s *Scene, is ...TypedComponentGroupId[C]) []map[EntityId]C {
+func MapGroup[D ComponentData](s *Scene, is ...TypedComponentGroupId[D]) []map[EntityId]D {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		return ViewGroupById(s.registry, is[0])
 	default:
-		return ViewGroup[C](s.registry)
+		return ViewGroup[D](s.registry)
 	}
 }
 
-func ClearComponentType[C ComponentData](s *Scene, is ...TypedComponentId[C]) {
+func ClearComponentType[D ComponentData](s *Scene, is ...TypedComponentId[D]) {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		ClearTypeById(s.registry, is[0])
 	default:
-		ClearType[C](s.registry)
+		ClearType[D](s.registry)
 	}
 }
 
-func ClearComponentGroup[C ComponentData](s *Scene, is ...TypedComponentGroupId[C]) {
+func ClearComponentGroup[D ComponentData](s *Scene, is ...TypedComponentGroupId[D]) {
 	switch {
 	case len(is) > 1:
 		panic("More than 1 component id for component type is not allowed")
 	case len(is) == 1:
 		ClearGroupById(s.registry, is[0])
 	default:
-		ClearGroup[C](s.registry)
+		ClearGroup[D](s.registry)
 	}
 }
