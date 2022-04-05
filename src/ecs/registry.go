@@ -1,16 +1,21 @@
 package ecs
 
+type AnyComponentGroup interface {
+}
+
 type AnyComponent interface {
 }
 
 type Registry struct {
-	components map[ComponentId]AnyComponent
+	componentGroups map[ComponentGroupId]AnyComponentGroup
+	components      map[ComponentId]AnyComponent
 }
 
 // NewRegistry - Creates a new registry filling in required initialization parameters
 func NewRegistry() *Registry {
 	return &Registry{
-		components: make(map[ComponentId]AnyComponent),
+		componentGroups: make(map[ComponentGroupId]AnyComponentGroup),
+		components:      make(map[ComponentId]AnyComponent),
 	}
 }
 
@@ -27,7 +32,7 @@ func getComponent[C ComponentData](r *Registry) (Component[C], bool) {
 
 // getComponentGroup - Find or create a component group of type C
 func getComponentGroup[C ComponentData](r *Registry) (ComponentGroup[C], bool) {
-	for _, v := range r.components {
+	for _, v := range r.componentGroups {
 		if vg, ok := v.(ComponentGroup[C]); ok {
 			return vg, true
 		}
@@ -66,13 +71,13 @@ func Link[C ComponentData](r *Registry, e EntityId, c C) TypedComponentId[C] {
 }
 
 // Group - Links the component to the respective entity inside the group
-func Group[C ComponentData](r *Registry, e EntityId, c ComponentData) TypedComponentId[C] {
+func Group[C ComponentData](r *Registry, e EntityId, c ComponentData) TypedComponentGroupId[C] {
 	vg, _ := getComponentGroup[C](r)
 	vc := NewComponent[C]()
 	vc.data[e] = c.(C)
 	vg.members[vc.id] = vc
-	r.components[vg.id] = vg
-	return TypedComponentId[C](vg.id)
+	r.componentGroups[vg.id] = vg
+	return TypedComponentGroupId[C](vg.id)
 }
 
 // Unlink - Unlinks the component type from the respective entity inside the registry (if they were not linked, this is a no-op)
@@ -101,12 +106,13 @@ func ClearType[C ComponentData](r *Registry) {
 // ClearGroup - Removes all instances of a component group from the respective the registry
 func ClearGroup[C ComponentData](r *Registry) {
 	if vg, ok := getComponentGroup[C](r); ok {
-		delete(r.components, vg.id)
+		delete(r.componentGroups, vg.id)
 	}
 }
 
 // Clear - Fully clears the respective the registry
 func Clear(r *Registry) {
+	r.componentGroups = make(map[ComponentGroupId]AnyComponentGroup)
 	r.components = make(map[ComponentId]AnyComponent)
 }
 
@@ -141,9 +147,9 @@ func ViewById[C ComponentData](r *Registry, i TypedComponentId[C]) map[EntityId]
 }
 
 // ViewGroupById - gets all entities from the component group by id
-func ViewGroupById[C ComponentData](r *Registry, i TypedComponentId[C]) []map[EntityId]C {
+func ViewGroupById[C ComponentData](r *Registry, i TypedComponentGroupId[C]) []map[EntityId]C {
 	group := make([]map[EntityId]C, 0)
-	if vg, ok := r.components[ComponentId(i)].(ComponentGroup[C]); ok {
+	if vg, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[C]); ok {
 		for _, vc := range vg.members {
 			group = append(group, vc.data)
 		}
@@ -185,9 +191,9 @@ func GetById[C ComponentData](r *Registry, i TypedComponentId[C], e EntityId) (c
 }
 
 // GetGroupById - gets specific component data group by its group id and parent entity id
-func GetGroupById[C ComponentData](r *Registry, i TypedComponentId[C], e EntityId) []C {
+func GetGroupById[C ComponentData](r *Registry, i TypedComponentGroupId[C], e EntityId) []C {
 	group := make([]C, 0)
-	if vg, ok := r.components[ComponentId(i)].(ComponentGroup[C]); ok {
+	if vg, ok := r.componentGroups[ComponentGroupId(i)].(ComponentGroup[C]); ok {
 		for _, vc := range vg.members {
 			group = append(group, vc.data[e])
 		}

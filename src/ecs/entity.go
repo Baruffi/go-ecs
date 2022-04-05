@@ -35,7 +35,7 @@ func GetComponent[C ComponentData](e Entity, is ...TypedComponentId[C]) (C, bool
 	return Get[C](e.scene.registry, e.id)
 }
 
-func GetComponentGroup[C ComponentData](e Entity, is ...TypedComponentId[C]) []C {
+func GetComponentGroup[C ComponentData](e Entity, is ...TypedComponentGroupId[C]) []C {
 	// Since only 1 id per type will exist in the registry, there should be no use case with multiple ids as args. Using ... as an optional notation
 	for _, i := range is {
 		return GetGroupById(e.scene.registry, i, e.id)
@@ -47,7 +47,7 @@ func AddComponent[C ComponentData](e Entity, c C) TypedComponentId[C] {
 	return Link(e.scene.registry, e.id, c)
 }
 
-func AddComponentGroup[C ComponentData](e Entity, c C) TypedComponentId[C] {
+func AddComponentGroup[C ComponentData](e Entity, c C) TypedComponentGroupId[C] {
 	return Group[C](e.scene.registry, e.id, c)
 }
 

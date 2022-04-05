@@ -41,7 +41,7 @@ func Map[C ComponentData](s *Scene, is ...TypedComponentId[C]) map[EntityId]C {
 	return View[C](s.registry)
 }
 
-func MapGroup[C ComponentData](s *Scene, is ...TypedComponentId[C]) []map[EntityId]C {
+func MapGroup[C ComponentData](s *Scene, is ...TypedComponentGroupId[C]) []map[EntityId]C {
 	// Since only 1 id per type will exist in the registry, there should be no use case with multiple ids as args. Using ... as an optional notation
 	for _, i := range is {
 		return ViewGroupById(s.registry, i)
