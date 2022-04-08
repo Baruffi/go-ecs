@@ -12,13 +12,13 @@ func (f UpdaterFunc) Update(dt float64) {
 
 type Scene struct {
 	Updater
-	registry *Registry
+	*Registry
 }
 
 // NewScene - Creates a new scene filling in required initialization parameters
-func NewScene(registry *Registry, updater Updater) *Scene {
+func NewScene(updater Updater) *Scene {
 	return &Scene{
-		registry: registry,
+		Registry: NewRegistry(),
 		Updater:  updater,
 	}
 }
@@ -30,53 +30,25 @@ func (s *Scene) CreateEntity() Entity {
 }
 
 func (s *Scene) ClearEntity(e Entity) {
-	ClearEntity(s.registry, e.id)
+	ClearEntity(s.Registry, e.id)
 }
 
 func (s *Scene) Clear() {
-	s.registry.Clear()
+	s.Registry.Clear()
 }
 
-func Map[D ComponentData](s *Scene, is ...TypedComponentId[D]) map[EntityId]D {
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		return ViewById(s.registry, is[0])
-	default:
-		return View[D](s.registry)
-	}
+func Map[D ComponentData](s *Scene) map[EntityId]D {
+	return View[D](s.Registry)
 }
 
-func MapGroup[D ComponentData](s *Scene, is ...TypedComponentGroupId[D]) []map[EntityId]D {
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		return ViewGroupById(s.registry, is[0])
-	default:
-		return ViewGroup[D](s.registry)
-	}
+func MapGroup[D ComponentData](s *Scene) map[ComponentId]map[EntityId]D {
+	return ViewGroup[D](s.Registry)
 }
 
-func ClearComponentType[D ComponentData](s *Scene, is ...TypedComponentId[D]) {
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		ClearTypeById(s.registry, is[0])
-	default:
-		ClearType[D](s.registry)
-	}
+func ClearComponentType[D ComponentData](s *Scene) {
+	ClearType[D](s.Registry)
 }
 
-func ClearComponentGroup[D ComponentData](s *Scene, is ...TypedComponentGroupId[D]) {
-	switch {
-	case len(is) > 1:
-		panic("More than 1 component id for component type is not allowed")
-	case len(is) == 1:
-		ClearGroupById(s.registry, is[0])
-	default:
-		ClearGroup[D](s.registry)
-	}
+func ClearComponentGroup[D ComponentData](s *Scene) {
+	ClearGroup[D](s.Registry)
 }

@@ -3,17 +3,28 @@ package impl
 import "time"
 
 type Clock struct {
-	dt   float64
-	last time.Time
+	last      time.Time
+	frameTick *time.Ticker
 }
 
-func (t *Clock) Init() {
-	t.last = time.Now()
+func (c *Clock) Init(fps int) {
+	c.last = time.Now()
+
+	if fps <= 0 {
+		c.frameTick = nil
+	} else {
+		c.frameTick = time.NewTicker(time.Second / time.Duration(fps))
+	}
 }
 
-func (t *Clock) Tick() float64 {
-	t.dt = time.Since(t.last).Seconds()
-	t.last = time.Now()
+func (c *Clock) Dt() float64 {
+	c.last = time.Now()
 
-	return t.dt
+	return time.Since(c.last).Seconds()
+}
+
+func (c *Clock) Tick() {
+	if c.frameTick != nil {
+		<-c.frameTick.C
+	}
 }

@@ -1,6 +1,10 @@
 package impl
 
 import (
+	"fmt"
+	"sort"
+	"time"
+
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/scenes/mainScene"
@@ -13,7 +17,7 @@ const (
 	MainSceneId = "mainScene"
 )
 
-func setupWindowAndClock() (*pixelgl.Window, Clock) {
+func setupWindow() *pixelgl.Window {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Proto countries",
 		Bounds: pixel.R(0, 0, 1024, 768),
@@ -24,9 +28,7 @@ func setupWindowAndClock() (*pixelgl.Window, Clock) {
 		panic(err)
 	}
 
-	clock := Clock{}
-
-	return win, clock
+	return win
 }
 
 func setupStage(win *pixelgl.Window) ecs.Stage {
@@ -39,25 +41,52 @@ func setupStage(win *pixelgl.Window) ecs.Stage {
 	return stage
 }
 
-func Run() {
-	win, clock := setupWindowAndClock()
-	stage := setupStage(win)
+func setupClock() Clock {
+	clock := Clock{}
+	clock.Init(-1)
 
-	clock.Init()
+	return clock
+}
+
+func Run() {
+	win := setupWindow()
+	stage := setupStage(win)
+	clock := setupClock()
+
+	var (
+		frames = 0
+		second = time.NewTicker(time.Second)
+	)
 	for !win.Closed() {
-		dt := clock.Tick()
+		dt := clock.Dt()
 
 		scene := stage.GetScene()
 		scene.Update(dt)
 
 		win.Clear(colornames.Black)
 
+		drawQueue := &components.SortableDrawerQueue{}
+		drawQueue.Init()
 		for _, group := range ecs.MapGroup[components.Drawer](scene) {
 			for _, drawer := range group {
-				drawer.Draw(win)
+				drawQueue.Add(drawer)
 			}
+		}
+		sort.Sort(drawQueue)
+		for _, drawer := range drawQueue.Drawers {
+			drawer.Draw(win)
 		}
 
 		win.Update()
+
+		frames++
+		select {
+		case <-second.C:
+			win.SetTitle(fmt.Sprintf("%s | FPS: %d", "Proto countries", frames))
+			frames = 0
+		default:
+		}
+
+		clock.Tick()
 	}
 }
