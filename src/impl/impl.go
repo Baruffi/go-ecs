@@ -9,6 +9,10 @@ import (
 	"golang.org/x/image/colornames"
 )
 
+const (
+	MainSceneId = "mainScene"
+)
+
 func setupWindowAndClock() (*pixelgl.Window, Clock) {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Proto countries",
@@ -27,8 +31,10 @@ func setupWindowAndClock() (*pixelgl.Window, Clock) {
 
 func setupStage(win *pixelgl.Window) ecs.Stage {
 	mainScene := mainScene.NewScene(win)
-	scenes := []*ecs.Scene{mainScene}
-	stage := ecs.NewStage(0, scenes)
+	scenes := map[string]*ecs.Scene{
+		MainSceneId: mainScene,
+	}
+	stage := ecs.NewStage(MainSceneId, scenes)
 
 	return stage
 }
