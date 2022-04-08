@@ -50,7 +50,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	cameraMatrix := &components.CameraComponent{}
 	cameraMatrix.Init(1.0, 1.2, true)
 	cameraCollider := &components.ColliderComponent{}
-	cameraCollider.Init(win.Bounds(), pixel.ZV, 1.0, 0.0, 1.2)
+	cameraCollider.Init(win.Bounds(), win.Bounds().Center(), 1.0, 1.0, 1.2)
 	camera := &components.Combiner[*components.CameraComponent, *components.ColliderComponent]{
 		T1: cameraMatrix,
 		T2: cameraCollider,
@@ -90,9 +90,11 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	world := s.CreateEntity()
 	ecs.AddComponent(world, worldMap)
 	ecs.AddComponentGroup[components.Drawer](world, worldMapBackdrop)
+	// ecs.AddComponentGroup[components.Drawer](world, worldMapCollider)
 
 	player := s.CreateEntity()
 	ecs.AddComponent(player, camera)
+	// ecs.AddComponentGroup[components.Drawer](player, cameraCollider)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
 	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV)
