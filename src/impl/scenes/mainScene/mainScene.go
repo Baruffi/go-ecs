@@ -89,6 +89,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 
 	world := s.CreateEntity()
 	ecs.AddComponent(world, worldMap)
+	ecs.AddComponentGroup[components.Drawer](world, worldMapBackdrop)
 
 	player := s.CreateEntity()
 	ecs.AddComponent(player, camera)
