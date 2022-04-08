@@ -23,7 +23,7 @@ func AddComponent[D ComponentData](e Entity, d D) TypedComponentId[D] {
 	return Link(e.scene.registry, e.id, d)
 }
 
-func AddComponentGroup[D ComponentData](e Entity, d D) TypedComponentGroupId[D] {
+func AddComponentGroup[D ComponentData](e Entity, d D) (TypedComponentId[D], TypedComponentGroupId[D]) {
 	return Group[D](e.scene.registry, e.id, d)
 }
 
@@ -69,6 +69,11 @@ func GetComponentGroup[D ComponentData](e Entity, is ...TypedComponentGroupId[D]
 	default:
 		return GetGroup[D](e.scene.registry, e.id)
 	}
+}
+
+// Ids are not worth it right now
+func GetComponentFromGroup[D ComponentData](e Entity, ci TypedComponentId[D], gi TypedComponentGroupId[D]) (D, bool) {
+	return GetFromGroup(e.scene.registry, gi, ci, e.id)
 }
 
 func RemoveComponent[D ComponentData](e Entity, is ...TypedComponentId[D]) {

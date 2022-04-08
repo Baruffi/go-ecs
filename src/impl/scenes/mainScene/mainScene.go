@@ -5,6 +5,7 @@ import (
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/scenes"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
@@ -14,7 +15,7 @@ import (
 type MainUpdater struct {
 	PlayerUpdater
 	UIUpdater
-	WorldMapUpdater
+	WorldUpdater
 	CountryUpdater
 
 	Window *pixelgl.Window
@@ -23,7 +24,7 @@ type MainUpdater struct {
 func (u *MainUpdater) Update(dt float64) {
 	u.PlayerUpdater.Update(u.Window, dt)
 	u.UIUpdater.Update(u.Window, dt)
-	u.WorldMapUpdater.Update(u.Window, dt)
+	u.WorldUpdater.Update(u.Window, dt)
 	u.CountryUpdater.Update(u.Window, dt)
 }
 
@@ -46,26 +47,51 @@ func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec) ecs
 }
 
 func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
-	mainCamera := &components.CameraComponent{}
-	mainCamera.Init(1.0, 1.2, true)
+	cameraMatrix := &components.CameraComponent{}
+	cameraMatrix.Init(1.0, 1.2, true)
+	cameraCollider := &components.ColliderComponent{}
+	cameraCollider.Init(win.Bounds(), pixel.ZV, 1.0, 0.0, 1.2)
+	camera := &components.Combiner[*components.CameraComponent, *components.ColliderComponent]{
+		T1: cameraMatrix,
+		T2: cameraCollider,
+	}
 
 	UICanvas := &components.CanvasComponent{}
 	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-	worldTime := &components.TimeComponent{}
-	worldTime.Init("Mon, 02 Jan 2006 15:04:05 MST")
+	clockTime := &components.TimeComponent{}
+	clockTime.Init("Mon, 02 Jan 2006 15:04:05 MST")
+	clockText := &components.TextComponent{}
+	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII))
+	clock := &components.Combiner[*components.TimeComponent, *components.TextComponent]{
+		T1: clockTime,
+		T2: clockText,
+	}
 
-	worldClock := &components.TextComponent{}
-	worldClock.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII))
+	worldMapBackdrop := &components.DrawComponent{}
+	spritesheet, err := scenes.LoadPicture("../assets/A_large_blank_world_map_with_oceans_marked_in_blue.png")
+	if err != nil {
+		panic(err)
+	}
+	worldMapBackdrop.Init(spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
+	sprite, _ := worldMapBackdrop.PrepareFrame(0, pixel.ZV)
+	worldMapCollider := &components.ColliderComponent{}
+	worldMapCollider.Init(sprite.Frame(), pixel.ZV, worldMapBackdrop.SpriteScale, 0.0, 1.0)
+	worldMap := &components.Combiner[*components.DrawComponent, *components.ColliderComponent]{
+		T1: worldMapBackdrop,
+		T2: worldMapCollider,
+	}
 
 	UI := s.CreateEntity()
 	ecs.AddComponent(UI, UICanvas)
-	ecs.AddComponent(UI, worldTime)
-	ecs.AddComponentGroup[components.UIElement](UI, worldClock)
+	ecs.AddComponent(UI, clock)
+	ecs.AddComponentGroup[components.Drawer](UI, UICanvas)
 
-	Player := s.CreateEntity()
-	ecs.AddComponent(Player, mainCamera)
-	ecs.AddComponentGroup[components.Drawable](Player, UICanvas)
+	world := s.CreateEntity()
+	ecs.AddComponent(world, worldMap)
+
+	player := s.CreateEntity()
+	ecs.AddComponent(player, camera)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
 	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV)
@@ -73,8 +99,11 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 
 	// Map the necessary entities onto the updater
 	u.Window = win
-	u.UI = UI
-	u.Player = Player
+	u.UIUpdater.UI = UI
+	u.WorldUpdater.World = world
+	u.Player = player
+	u.PlayerUpdater.UI = UI
+	u.PlayerUpdater.World = world
 	u.Countries = make([]ecs.Entity, 0, 1)
 	u.Countries = append(u.Countries, initialCountry)
 }

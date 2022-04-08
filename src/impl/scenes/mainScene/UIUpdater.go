@@ -14,28 +14,22 @@ type UIUpdater struct {
 }
 
 func (u *UIUpdater) Update(w *pixelgl.Window, dt float64) {
-	for _, UIElement := range ecs.GetComponentGroup[components.UIElement](u.UI) {
-		// TODO: Add component names to switch between components of the same type
-		switch UIComponent := UIElement.(type) {
-		case *components.TextComponent:
-			u.UpdateClockUIComponent(UIComponent)
-		}
+	if clock, ok := ecs.GetComponent[*components.Combiner[*components.TimeComponent, *components.TextComponent]](u.UI); ok {
+		u.UpdateClock(clock.GetFirst(), clock.GetSecond())
 	}
 }
 
-func (u *UIUpdater) UpdateClockUIComponent(textComponent *components.TextComponent) {
-	if worldTime, ok := ecs.GetComponent[*components.TimeComponent](u.UI); ok {
-		select {
-		case <-worldTime.Ticker.C:
-			textComponent.Clear()
-			worldTime.Time = time.Now()
-			timeStr := fmt.Sprintf("TIME: %s", worldTime.String())
-			textComponent.Write(timeStr)
-			if UICanvas, ok := ecs.GetComponent[*components.CanvasComponent](u.UI); ok {
-				UICanvas.Clear()
-				textComponent.Draw(UICanvas.Canvas)
-			}
-		default:
+func (u *UIUpdater) UpdateClock(timeComponent *components.TimeComponent, textComponent *components.TextComponent) {
+	select {
+	case <-timeComponent.Ticker.C:
+		textComponent.Clear()
+		timeComponent.Time = time.Now()
+		timeStr := fmt.Sprintf("TIME: %s", timeComponent.String())
+		textComponent.Write(timeStr)
+		if UICanvas, ok := ecs.GetComponent[*components.CanvasComponent](u.UI); ok {
+			UICanvas.Clear()
+			textComponent.Draw(UICanvas.Canvas)
 		}
+	default:
 	}
 }
