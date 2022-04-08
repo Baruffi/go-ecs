@@ -8,6 +8,7 @@ import (
 	"example.com/v0/src/impl/scenes"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/text"
+	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
 
@@ -32,11 +33,11 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	frameSizeX := 256.0
 	frameSizeY := 256.0
 	spriteScale := 1.0
-	drawComponent.Init(spritesheet, frameSizeX, frameSizeY, spriteScale)
+	drawComponent.Init(components.Layer4, spritesheet, frameSizeX, frameSizeY, spriteScale)
 	drawComponent.PrepareFrame(p.Frame, p.Position)
 	textComponent := &components.TextComponent{}
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	textComponent.Init(p.Orig, atlas)
+	textComponent.Init(p.Orig, atlas, colornames.Black)
 	frameScaleStep := math.Sqrt(frameSizeX*frameSizeY) * spriteScale / 2
 	hoverComponent := &components.ColliderComponent{}
 	area := pixel.R(p.Position.X-frameScaleStep, p.Position.Y-frameScaleStep, p.Position.X+frameScaleStep, p.Position.Y+frameScaleStep)

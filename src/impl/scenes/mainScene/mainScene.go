@@ -9,6 +9,7 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
+	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
 
@@ -29,9 +30,8 @@ func (u *MainUpdater) Update(dt float64) {
 }
 
 func NewScene(win *pixelgl.Window) *ecs.Scene {
-	registry := ecs.NewRegistry()
 	updater := &MainUpdater{}
-	mainScene := ecs.NewScene(registry, updater)
+	mainScene := ecs.NewScene(updater)
 	configureScene(mainScene, updater, win)
 
 	return mainScene
@@ -62,7 +62,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	clockTime := &components.TimeComponent{}
 	clockTime.Init("Mon, 02 Jan 2006 15:04:05 MST")
 	clockText := &components.TextComponent{}
-	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII))
+	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black)
 	clock := &components.Combiner[*components.TimeComponent, *components.TextComponent]{
 		T1: clockTime,
 		T2: clockText,
@@ -73,7 +73,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	if err != nil {
 		panic(err)
 	}
-	worldMapBackdrop.Init(spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
+	worldMapBackdrop.Init(components.Layer9, spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
 	sprite, _ := worldMapBackdrop.PrepareFrame(0, pixel.ZV)
 	worldMapCollider := &components.ColliderComponent{}
 	worldMapCollider.Init(sprite.Frame(), pixel.ZV, worldMapBackdrop.SpriteScale, 0.0, 1.0)

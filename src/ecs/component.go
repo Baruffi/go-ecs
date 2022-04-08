@@ -2,8 +2,6 @@ package ecs
 
 type ComponentId string
 
-type TypedComponentId[D ComponentData] ComponentId
-
 type ComponentData interface {
 }
 
@@ -13,9 +11,15 @@ type Component[D ComponentData] struct {
 }
 
 // NewComponent - Creates a new component filling in required initialization parameters
-func NewComponent[D ComponentData]() Component[D] {
+func NewComponent[D ComponentData](manualIdInput ...string) Component[D] {
+	var id string
+	if len(manualIdInput) == 1 {
+		id = manualIdInput[0]
+	} else {
+		id = GenerateId()
+	}
 	return Component[D]{
-		id:   ComponentId(GenerateId()),
+		id:   ComponentId(id),
 		data: make(map[EntityId]D),
 	}
 }

@@ -2,17 +2,21 @@ package ecs
 
 type ComponentGroupId string
 
-type TypedComponentGroupId[D ComponentData] ComponentGroupId
-
 type ComponentGroup[D ComponentData] struct {
 	id      ComponentGroupId
 	members map[ComponentId]Component[D]
 }
 
 // NewComponentGroup - Creates a new ComponentGroup filling in required initialization parameters
-func NewComponentGroup[D ComponentData]() ComponentGroup[D] {
+func NewComponentGroup[D ComponentData](manualIdInput ...string) ComponentGroup[D] {
+	var id string
+	if len(manualIdInput) == 1 {
+		id = manualIdInput[0]
+	} else {
+		id = GenerateId()
+	}
 	return ComponentGroup[D]{
-		id:      ComponentGroupId(GenerateId()),
+		id:      ComponentGroupId(id),
 		members: make(map[ComponentId]Component[D]),
 	}
 }
@@ -44,11 +48,7 @@ func (g ComponentGroup[D]) Set(c AnyComponent) {
 	g.members[c.GetId()] = c.(Component[D])
 }
 
-func (g ComponentGroup[D]) Unset(c ComponentId) {
-	delete(g.members, c)
-}
-
-func (g ComponentGroup[D]) UnsetEntity(e EntityId) {
+func (g ComponentGroup[D]) Unset(e EntityId) {
 	for _, c := range g.members {
 		c.Unset(e)
 	}
