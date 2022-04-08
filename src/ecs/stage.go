@@ -1,24 +1,21 @@
 package ecs
 
 type Stage struct {
-	sceneIdx int
-	scenes   []*Scene
+	currentScene string
+	scenes       map[string]*Scene
 }
 
-func NewStage(startIdx int, scenes []*Scene) Stage {
+func NewStage(startScene string, scenes map[string]*Scene) Stage {
 	return Stage{
-		sceneIdx: startIdx,
-		scenes:   scenes,
+		currentScene: startScene,
+		scenes:       scenes,
 	}
 }
 
-func (s *Stage) NextScene() {
-	s.sceneIdx++
-	if s.sceneIdx >= len(s.scenes) {
-		s.sceneIdx = 0
-	}
+func (s *Stage) ChangeScene(scene string) {
+	s.currentScene = scene
 }
 
 func (s *Stage) GetScene() *Scene {
-	return s.scenes[s.sceneIdx]
+	return s.scenes[s.currentScene]
 }
