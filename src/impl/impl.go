@@ -46,9 +46,9 @@ func Run() {
 
 		win.Clear(colornames.Black)
 
-		for _, group := range ecs.MapGroup[components.Drawable](scene) {
-			for _, drawable := range group {
-				drawable.Draw(win)
+		for _, group := range ecs.MapGroup[components.Drawer](scene) {
+			for _, drawer := range group {
+				drawer.Draw(win)
 			}
 		}
 

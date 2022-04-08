@@ -92,13 +92,13 @@ func Link[D ComponentData](r *Registry, e EntityId, d D) TypedComponentId[D] {
 }
 
 // Group - Links the component to the respective entity inside the group
-func Group[D ComponentData](r *Registry, e EntityId, d ComponentData) TypedComponentGroupId[D] {
+func Group[D ComponentData](r *Registry, e EntityId, d ComponentData) (TypedComponentId[D], TypedComponentGroupId[D]) {
 	g, _ := getComponentGroup[D](r)
 	c := NewComponent[D]()
-	c.Set(e, d)
+	c.data[e] = d.(D)
 	g.members[c.id] = c
 	r.SetGroup(g)
-	return TypedComponentGroupId[D](g.id)
+	return TypedComponentId[D](c.id), TypedComponentGroupId[D](g.id)
 }
 
 // Has - Checks if component exists in the registry and is linked to the entity
@@ -279,4 +279,19 @@ func GetGroupById[D ComponentData](r *Registry, i TypedComponentGroupId[D], e En
 	}
 
 	return group
+}
+
+// Ids are not worth it right now
+// GetFromGroup - gets specific component data by its component id and parent entity id from inside a group (or returns the default value)
+func GetFromGroup[D ComponentData](r *Registry, gi TypedComponentGroupId[D], ci TypedComponentId[D], e EntityId) (d D, ok bool) {
+	var c Component[D]
+	g, ok := r.componentGroups[ComponentGroupId(gi)].(ComponentGroup[D])
+	if ok {
+		c, ok = g.members[ComponentId(ci)]
+		if ok {
+			d, ok = c.data[e]
+		}
+	}
+
+	return d, ok
 }
