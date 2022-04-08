@@ -1,9 +1,11 @@
 package components
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/imdraw"
 )
 
 type TagComponent struct {
@@ -71,17 +73,19 @@ func (d *DeltaComponent) Update() {
 
 type ColliderComponent struct {
 	DeltaComponent
-	Area pixel.Rect
+	Area     pixel.Rect
+	DebugImd *imdraw.IMDraw
 }
 
 func (c *ColliderComponent) Init(area pixel.Rect, initialPos pixel.Vec, initialScale float64, speed float64, scaleSpeed float64) {
-	c.Area = area
+	c.Area = area.Moved(initialPos.Sub(area.Center()))
 	c.DeltaComponent.Init(initialPos, initialScale, speed, scaleSpeed)
+	c.DebugImd = imdraw.New(nil)
 }
 
 func (c *ColliderComponent) Update(anchor pixel.Vec) {
 	c.DeltaComponent.Update()
-	size := c.Area.Size().Scaled(c.Scale)
+	size := c.Area.Size().Scaled(c.DeltaScale)
 	c.Area = c.Area.Resized(anchor, size).Moved(c.DeltaPos)
 }
 
@@ -91,6 +95,19 @@ func (c *ColliderComponent) CollidesVec(position pixel.Vec) bool {
 
 func (c *ColliderComponent) CollidesRect(bounds pixel.Rect) bool {
 	return c.Area.Intersects(bounds)
+}
+
+func (c *ColliderComponent) Draw(t pixel.Target) {
+	c.DebugImd.Clear()
+
+	c.DebugImd.Color = color.RGBA{255, 0, 0, 255}
+	c.DebugImd.Push(c.Area.Min)
+	c.DebugImd.Push(pixel.V(c.Area.Max.X, c.Area.Min.Y))
+	c.DebugImd.Push(c.Area.Max)
+	c.DebugImd.Push(pixel.V(c.Area.Min.X, c.Area.Max.Y))
+	c.DebugImd.Polygon(5.0)
+
+	c.DebugImd.Draw(t)
 }
 
 type ActiveComponent struct {
