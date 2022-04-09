@@ -1,7 +1,6 @@
 package ecs
 
-type Type interface {
-}
+type Type interface{}
 
 type Factory[T Type] interface {
 	Generate() T
@@ -11,20 +10,20 @@ type Prefab[T Type] interface {
 	Configure(T)
 }
 
-type EntityFactory struct {
-	Prefab[Entity]
-	s *Scene
+type EntityFactory[P Prefab[Entity]] struct {
+	Prefab P
+	s      *Scene
 }
 
-func NewEntityFactory(s *Scene, prefab Prefab[Entity]) EntityFactory {
-	return EntityFactory{
+func NewEntityFactory[P Prefab[Entity]](s *Scene, prefab P) EntityFactory[P] {
+	return EntityFactory[P]{
 		s:      s,
 		Prefab: prefab,
 	}
 }
 
-func (f EntityFactory) Generate() Entity {
+func (f EntityFactory[P]) Generate() Entity {
 	e := f.s.CreateEntity()
-	f.Configure(e)
+	f.Prefab.Configure(e)
 	return e
 }

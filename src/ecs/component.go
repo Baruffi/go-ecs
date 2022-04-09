@@ -2,8 +2,7 @@ package ecs
 
 type ComponentId string
 
-type ComponentData interface {
-}
+type ComponentData interface{}
 
 type Component[D ComponentData] struct {
 	id   ComponentId
