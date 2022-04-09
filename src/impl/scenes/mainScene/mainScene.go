@@ -5,6 +5,7 @@ import (
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -19,7 +20,8 @@ type MainUpdater struct {
 	WorldUpdater
 	CountryUpdater
 
-	Window *pixelgl.Window
+	*pixelgl.Window
+	managers.DrawerManager
 }
 
 func (u *MainUpdater) Update(dt float64) {
@@ -29,24 +31,25 @@ func (u *MainUpdater) Update(dt float64) {
 	u.CountryUpdater.Update(u.Window, dt)
 }
 
-func NewScene(win *pixelgl.Window) *ecs.Scene {
+func NewScene(win *pixelgl.Window, drawerManager managers.DrawerManager) *ecs.Scene {
 	updater := &MainUpdater{}
 	mainScene := ecs.NewScene(updater)
-	configureScene(mainScene, updater, win)
+	configureScene(mainScene, updater, win, drawerManager)
 
 	return mainScene
 }
 
-func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec) ecs.EntityFactory {
+func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, drawerManager managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
 	prefab := CountryPrefab{
-		Frame:    frame,
-		Position: position,
-		Orig:     orig,
+		frame:         frame,
+		position:      position,
+		orig:          orig,
+		drawerManager: drawerManager,
 	}
 	return ecs.NewEntityFactory(s, prefab)
 }
 
-func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
+func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, drawerManager managers.DrawerManager) {
 	cameraMatrix := &components.CameraComponent{}
 	cameraMatrix.Init(1.0, 1.2, true)
 	cameraCollider := &components.ColliderComponent{}
@@ -73,7 +76,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	if err != nil {
 		panic(err)
 	}
-	worldMapBackdrop.Init(components.Layer9, spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
+	worldMapBackdrop.Init(spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
 	sprite, _ := worldMapBackdrop.PrepareFrame(0, pixel.ZV)
 	worldMapCollider := &components.ColliderComponent{}
 	worldMapCollider.Init(sprite.Frame(), pixel.ZV, worldMapBackdrop.SpriteScale, 0.0, 1.0)
@@ -85,28 +88,32 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window) {
 	UI := s.CreateEntity()
 	ecs.AddComponent(UI, UICanvas)
 	ecs.AddComponent(UI, clock)
-	ecs.AddComponentGroup[components.Drawer](UI, UICanvas)
 
 	world := s.CreateEntity()
 	ecs.AddComponent(world, worldMap)
-	ecs.AddComponentGroup[components.Drawer](world, worldMapBackdrop)
-	// ecs.AddComponentGroup[components.Drawer](world, worldMapCollider)
 
 	player := s.CreateEntity()
 	ecs.AddComponent(player, camera)
-	// ecs.AddComponentGroup[components.Drawer](player, cameraCollider)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
-	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV)
+	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, drawerManager)
 	initialCountry := initialCountryFactory.Generate()
+	initialCountryFactory.Prefab.Update(0, pixel.V(-100, -100), pixel.ZV)
+	secondCountry := initialCountryFactory.Generate()
+
+	// Map every component that will be always drawn
+	drawerManager.AddDefault(ecs.Level2, UICanvas)
+	drawerManager.AddDefault(ecs.Level7, worldMapCollider, cameraCollider)
+	drawerManager.AddDefault(ecs.Level9, worldMapBackdrop)
 
 	// Map the necessary entities onto the updater
 	u.Window = win
+	u.DrawerManager = drawerManager
 	u.UIUpdater.UI = UI
 	u.WorldUpdater.World = world
 	u.Player = player
 	u.PlayerUpdater.UI = UI
 	u.PlayerUpdater.World = world
 	u.Countries = make([]ecs.Entity, 0, 1)
-	u.Countries = append(u.Countries, initialCountry)
+	u.Countries = append(u.Countries, initialCountry, secondCountry)
 }

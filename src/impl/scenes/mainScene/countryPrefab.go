@@ -5,6 +5,7 @@ import (
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/text"
@@ -13,15 +14,16 @@ import (
 )
 
 type CountryPrefab struct {
-	Frame    int
-	Position pixel.Vec
-	Orig     pixel.Vec
+	frame         int
+	position      pixel.Vec
+	orig          pixel.Vec
+	drawerManager managers.DrawerManager
 }
 
 func (p *CountryPrefab) Update(frame int, position pixel.Vec, orig pixel.Vec) {
-	p.Frame = frame
-	p.Position = position
-	p.Orig = orig
+	p.frame = frame
+	p.position = position
+	p.orig = orig
 }
 
 func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
@@ -33,19 +35,23 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	frameSizeX := 256.0
 	frameSizeY := 256.0
 	spriteScale := 1.0
-	drawComponent.Init(components.Layer4, spritesheet, frameSizeX, frameSizeY, spriteScale)
-	drawComponent.PrepareFrame(p.Frame, p.Position)
+	drawComponent.Init(spritesheet, frameSizeX, frameSizeY, spriteScale)
+	drawComponent.PrepareFrame(p.frame, p.position)
+
 	textComponent := &components.TextComponent{}
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	textComponent.Init(p.Orig, atlas, colornames.Black)
+	textComponent.Init(p.orig, atlas, colornames.Black)
+
 	frameScaleStep := math.Sqrt(frameSizeX*frameSizeY) * spriteScale / 2
 	hoverComponent := &components.ColliderComponent{}
-	area := pixel.R(p.Position.X-frameScaleStep, p.Position.Y-frameScaleStep, p.Position.X+frameScaleStep, p.Position.Y+frameScaleStep)
-	hoverComponent.Init(area, p.Position, 1.0, 0.0, 1.0)
+	area := pixel.R(p.position.X-frameScaleStep, p.position.Y-frameScaleStep, p.position.X+frameScaleStep, p.position.Y+frameScaleStep)
+	hoverComponent.Init(area, p.position, 1.0, 0.0, 1.0)
 
 	ecs.AddComponent(countryEntity, drawComponent)
 	ecs.AddComponent(countryEntity, textComponent)
 	ecs.AddComponent(countryEntity, hoverComponent)
-	ecs.AddComponentGroup[components.Drawer](countryEntity, drawComponent)
-	ecs.AddComponentGroup[components.Drawer](countryEntity, textComponent)
+
+	p.drawerManager.AddDefault(ecs.Level5, drawComponent)
+	p.drawerManager.AddDefault(ecs.Level4, textComponent)
+	p.drawerManager.AddDefault(ecs.Level7, hoverComponent)
 }

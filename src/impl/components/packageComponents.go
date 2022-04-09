@@ -41,10 +41,6 @@ func (c *CanvasComponent) Init(bounds pixel.Rect, color color.RGBA) {
 	c.Color = color
 }
 
-func (c *CanvasComponent) GetLayer() Layer {
-	return Layer2
-}
-
 func (c *CanvasComponent) Bounds() pixel.Rect {
 	return c.Canvas.Bounds()
 }
@@ -62,11 +58,9 @@ type DrawComponent struct {
 	Spritesheet pixel.Picture
 	SpriteScale float64
 	Frames      []pixel.Rect
-	Layer       Layer
 }
 
-func (d *DrawComponent) Init(layer Layer, spritesheet pixel.Picture, frameSizeX float64, frameSizeY float64, spriteScale float64) {
-	d.Layer = layer
+func (d *DrawComponent) Init(spritesheet pixel.Picture, frameSizeX float64, frameSizeY float64, spriteScale float64) {
 	d.Spritesheet = spritesheet
 	d.SpriteScale = spriteScale
 	frameArea := math.Sqrt(frameSizeX * frameSizeY)
@@ -77,10 +71,6 @@ func (d *DrawComponent) Init(layer Layer, spritesheet pixel.Picture, frameSizeX 
 		}
 	}
 	d.Batch = pixel.NewBatch(&pixel.TrianglesData{}, spritesheet)
-}
-
-func (d *DrawComponent) GetLayer() Layer {
-	return d.Layer
 }
 
 func (d *DrawComponent) PrepareFrame(frame int, position pixel.Vec) (*pixel.Sprite, error) {
@@ -116,10 +106,6 @@ type TextComponent struct {
 func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas, color color.RGBA) {
 	t.Txt = text.New(orig, atlas)
 	t.Txt.Color = color
-}
-
-func (t *TextComponent) GetLayer() Layer {
-	return Layer0
 }
 
 func (t *TextComponent) Write(str string) {

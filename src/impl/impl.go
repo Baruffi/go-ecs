@@ -2,12 +2,12 @@ package impl
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"example.com/v0/src/ecs"
-	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes/mainScene"
+	"example.com/v0/src/impl/tools"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
@@ -31,8 +31,15 @@ func setupWindow() *pixelgl.Window {
 	return win
 }
 
-func setupStage(win *pixelgl.Window) ecs.Stage {
-	mainScene := mainScene.NewScene(win)
+func setupManagers(win *pixelgl.Window) (managers.EventManager, managers.DrawerManager) {
+	eventManager := managers.NewEventManager()
+	drawerManager := managers.NewDrawerManager(win)
+
+	return eventManager, drawerManager
+}
+
+func setupStage(win *pixelgl.Window, drawerManager managers.DrawerManager) ecs.Stage {
+	mainScene := mainScene.NewScene(win, drawerManager)
 	scenes := map[string]*ecs.Scene{
 		MainSceneId: mainScene,
 	}
@@ -41,8 +48,8 @@ func setupStage(win *pixelgl.Window) ecs.Stage {
 	return stage
 }
 
-func setupClock() Clock {
-	clock := Clock{}
+func setupClock() tools.Clock {
+	clock := tools.Clock{}
 	clock.Init(-1)
 
 	return clock
@@ -50,7 +57,8 @@ func setupClock() Clock {
 
 func Run() {
 	win := setupWindow()
-	stage := setupStage(win)
+	_, drawerManager := setupManagers(win)
+	stage := setupStage(win, drawerManager)
 	clock := setupClock()
 
 	var (
@@ -65,17 +73,7 @@ func Run() {
 
 		win.Clear(colornames.Black)
 
-		drawQueue := &components.SortableDrawerQueue{}
-		drawQueue.Init()
-		for _, group := range ecs.MapGroup[components.Drawer](scene) {
-			for _, drawer := range group {
-				drawQueue.Add(drawer)
-			}
-		}
-		sort.Sort(drawQueue)
-		for _, drawer := range drawQueue.Drawers {
-			drawer.Draw(win)
-		}
+		drawerManager.Execute()
 
 		win.Update()
 
