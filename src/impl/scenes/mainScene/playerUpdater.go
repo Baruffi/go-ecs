@@ -8,9 +8,10 @@ import (
 )
 
 type PlayerUpdater struct {
-	Player ecs.Entity
-	World  ecs.Entity
-	UI     ecs.Entity
+	Player    ecs.Entity
+	Countries []ecs.Entity
+	World     ecs.Entity
+	UI        ecs.Entity
 }
 
 func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
@@ -59,6 +60,25 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 					cameraCollider.Area = previousArea
 					cameraCollider.Scale = previousScale
 					cameraCollider.Pos = previousPos
+				}
+			}
+
+			for _, country := range u.Countries {
+				if hoverComponent, ok := ecs.GetComponent[*components.ColliderComponent](country); ok {
+					if textComponent, ok := ecs.GetComponent[*components.TextComponent](country); ok {
+						if hoverComponent.CollidesVec(cameraComponent.Unproject(mousePosition)) {
+							if timeTag, ok := ecs.GetComponent[*components.TagComponent](country); ok {
+								if clock, ok := ecs.GetComponent[*components.Combiner[*components.TimeComponent, *components.TextComponent]](u.UI); ok {
+									timeComponent := clock.GetFirst()
+									timeComponent.UpdateLocation(timeTag.Tag)
+								}
+							}
+							textComponent.Clear()
+							textComponent.Write("TEST")
+						} else {
+							textComponent.Clear()
+						}
+					}
 				}
 			}
 		}

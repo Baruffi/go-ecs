@@ -121,3 +121,7 @@ func (a *ActiveComponent) Init(active bool) {
 func (a *ActiveComponent) Toggle() {
 	a.Active = !a.Active
 }
+
+type DataComponent struct {
+	Data any
+}

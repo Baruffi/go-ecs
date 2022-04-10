@@ -100,12 +100,14 @@ func (d *DrawComponent) DrawFrame(frame int, position pixel.Vec, target pixel.Ta
 }
 
 type TextComponent struct {
-	Txt *text.Text
+	Txt   *text.Text
+	scale float64
 }
 
-func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas, color color.RGBA) {
+func (t *TextComponent) Init(orig pixel.Vec, atlas *text.Atlas, color color.RGBA, scale float64) {
 	t.Txt = text.New(orig, atlas)
 	t.Txt.Color = color
+	t.scale = scale
 }
 
 func (t *TextComponent) Write(str string) {
@@ -117,20 +119,39 @@ func (t *TextComponent) Clear() {
 }
 
 func (t *TextComponent) Draw(target pixel.Target) {
-	t.Txt.Draw(target, pixel.IM)
+	t.Txt.Draw(target, pixel.IM.Scaled(t.Txt.Orig, t.scale))
 }
 
 type TimeComponent struct {
-	Time   time.Time
-	Ticker *time.Ticker
-	Format string
+	Time     time.Time
+	Location *time.Location
+	Ticker   *time.Ticker
+	Format   string
 }
 
-func (t *TimeComponent) Init(format string) {
+func (t *TimeComponent) Init(locationStr string, format string) {
+	location, err := time.LoadLocation(locationStr)
+	if err != nil {
+		panic("Invalid location")
+	}
+	t.Location = location
+	t.Time = time.Now().In(t.Location)
 	t.Ticker = time.NewTicker(time.Second)
 	t.Format = format
 }
 
+func (t *TimeComponent) UpdateLocation(locationStr string) {
+	location, err := time.LoadLocation(locationStr)
+	if err != nil {
+		panic("Invalid location")
+	}
+	t.Location = location
+}
+
+func (t *TimeComponent) UpdateTime() {
+	t.Time = time.Now().In(t.Location)
+}
+
 func (t *TimeComponent) String() string {
-	return t.Time.Local().Format(t.Format)
+	return t.Time.Format(t.Format)
 }
