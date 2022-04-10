@@ -1,17 +1,25 @@
 package mainScene
 
 import (
+	"fmt"
 	"image/color"
+	"time"
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes"
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
+)
+
+const (
+	DebugStartDrawing managers.EventCall = iota
+	DebugStopDrawing
 )
 
 type MainUpdater struct {
@@ -21,6 +29,7 @@ type MainUpdater struct {
 	CountryUpdater
 
 	*pixelgl.Window
+	managers.EventManager
 	managers.DrawerManager
 }
 
@@ -29,27 +38,39 @@ func (u *MainUpdater) Update(dt float64) {
 	u.UIUpdater.Update(u.Window, dt)
 	u.WorldUpdater.Update(u.Window, dt)
 	u.CountryUpdater.Update(u.Window, dt)
+
+	if !u.EventManager.Executing() {
+		u.EventManager.AddT2(func() {
+			fmt.Printf("TEST START ON %d\n", u.EventManager.GetTaskCount())
+			u.EventManager.AddT1(DebugStartDrawing)
+			time.Sleep(time.Second)
+			u.EventManager.AddT1(DebugStopDrawing)
+			time.Sleep(time.Second)
+			fmt.Printf("TEST COMPLETE ON %d\n", u.EventManager.GetTaskCount())
+		})
+	}
 }
 
-func NewScene(win *pixelgl.Window, drawerManager managers.DrawerManager) *ecs.Scene {
+func NewScene(win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) *ecs.Scene {
 	updater := &MainUpdater{}
 	mainScene := ecs.NewScene(updater)
-	configureScene(mainScene, updater, win, drawerManager)
+	configureScene(mainScene, updater, win, eventManager, drawerManager)
 
 	return mainScene
 }
 
-func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, drawerManager managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
+func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventManager managers.EventManager, drawerManager managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
 	prefab := CountryPrefab{
 		frame:         frame,
 		position:      position,
 		orig:          orig,
+		timeLoc:       timeLoc,
 		drawerManager: drawerManager,
 	}
 	return ecs.NewEntityFactory(s, prefab)
 }
 
-func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, drawerManager managers.DrawerManager) {
+func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) {
 	cameraMatrix := &components.CameraComponent{}
 	cameraMatrix.Init(1.0, 1.2, true)
 	cameraCollider := &components.ColliderComponent{}
@@ -63,9 +84,9 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, drawerMan
 	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
 	clockTime := &components.TimeComponent{}
-	clockTime.Init("Mon, 02 Jan 2006 15:04:05 MST")
+	clockTime.Init("UTC", "Mon, 02 Jan 2006 15:04:05 MST")
 	clockText := &components.TextComponent{}
-	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black)
+	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black, 1)
 	clock := &components.Combiner[*components.TimeComponent, *components.TextComponent]{
 		T1: clockTime,
 		T2: clockText,
@@ -96,24 +117,42 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, drawerMan
 	ecs.AddComponent(player, camera)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
-	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, drawerManager)
+	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
 	initialCountry := initialCountryFactory.Generate()
-	initialCountryFactory.Prefab.Update(0, pixel.V(-100, -100), pixel.ZV)
+	initialCountryFactory.Prefab.Update(0, pixel.V(-100, -100), pixel.ZV, "MST")
 	secondCountry := initialCountryFactory.Generate()
+	countries := []ecs.Entity{initialCountry, secondCountry}
 
 	// Map every component that will be always drawn
 	drawerManager.AddDefault(ecs.Level2, UICanvas)
 	drawerManager.AddDefault(ecs.Level7, worldMapCollider, cameraCollider)
 	drawerManager.AddDefault(ecs.Level9, worldMapBackdrop)
 
+	// More debug stuff
+	debugImd := imdraw.New(nil)
+	debugImd.Color = color.RGBA{255, 0, 0, 255}
+	debugImd.Push(pixel.ZV)
+	debugImd.Push(pixel.V(0, 10))
+	debugImd.Push(pixel.V(10, 10))
+	debugImd.Push(pixel.V(10, 0))
+	debugImd.Polygon(5.0)
+	eventManager.SetDefault(DebugStartDrawing, func() {
+		drawerManager.AddDefault(ecs.Level0, debugImd)
+	})
+	eventManager.SetDefault(DebugStopDrawing, func() {
+		drawerManager.UnsetDefault(ecs.Level0)
+	})
+
 	// Map the necessary entities onto the updater
-	u.Window = win
-	u.DrawerManager = drawerManager
 	u.UIUpdater.UI = UI
 	u.WorldUpdater.World = world
-	u.Player = player
+	u.CountryUpdater.Countries = countries
+	u.PlayerUpdater.Player = player
 	u.PlayerUpdater.UI = UI
 	u.PlayerUpdater.World = world
-	u.Countries = make([]ecs.Entity, 0, 1)
-	u.Countries = append(u.Countries, initialCountry, secondCountry)
+	u.PlayerUpdater.Countries = countries
+
+	u.Window = win
+	u.EventManager = eventManager
+	u.DrawerManager = drawerManager
 }

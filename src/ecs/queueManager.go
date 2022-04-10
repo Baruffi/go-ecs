@@ -30,6 +30,10 @@ func (m *QueueManager[T1, T2, Q1, Q2]) SetDefault(t1 T1, t2 T2) {
 	m.defaults[t1] = t2
 }
 
+func (m *QueueManager[T1, T2, Q1, Q2]) UnsetDefault(t1 T1) {
+	delete(m.defaults, t1)
+}
+
 func (m *QueueManager[T1, T2, Q1, Q2]) AddT1(c T1) {
 	m.queue1.Feed(c)
 }

@@ -32,14 +32,14 @@ func setupWindow() *pixelgl.Window {
 }
 
 func setupManagers(win *pixelgl.Window) (managers.EventManager, managers.DrawerManager) {
-	eventManager := managers.NewEventManager()
+	eventManager := managers.NewEventManager(10, 10, 5*time.Second)
 	drawerManager := managers.NewDrawerManager(win)
 
 	return eventManager, drawerManager
 }
 
-func setupStage(win *pixelgl.Window, drawerManager managers.DrawerManager) ecs.Stage {
-	mainScene := mainScene.NewScene(win, drawerManager)
+func setupStage(win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) ecs.Stage {
+	mainScene := mainScene.NewScene(win, eventManager, drawerManager)
 	scenes := map[string]*ecs.Scene{
 		MainSceneId: mainScene,
 	}
@@ -57,8 +57,8 @@ func setupClock() tools.Clock {
 
 func Run() {
 	win := setupWindow()
-	_, drawerManager := setupManagers(win)
-	stage := setupStage(win, drawerManager)
+	eventManager, drawerManager := setupManagers(win)
+	stage := setupStage(win, eventManager, drawerManager)
 	clock := setupClock()
 
 	var (
@@ -70,6 +70,8 @@ func Run() {
 
 		scene := stage.GetScene()
 		scene.Update(dt)
+
+		eventManager.Execute()
 
 		win.Clear(colornames.Black)
 

@@ -2,7 +2,6 @@ package mainScene
 
 import (
 	"fmt"
-	"time"
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
@@ -23,7 +22,7 @@ func (u *UIUpdater) UpdateClock(timeComponent *components.TimeComponent, textCom
 	select {
 	case <-timeComponent.Ticker.C:
 		textComponent.Clear()
-		timeComponent.Time = time.Now()
+		timeComponent.UpdateTime()
 		timeStr := fmt.Sprintf("TIME: %s", timeComponent.String())
 		textComponent.Write(timeStr)
 		if UICanvas, ok := ecs.GetComponent[*components.CanvasComponent](u.UI); ok {
