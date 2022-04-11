@@ -18,7 +18,7 @@ type CountryPrefab struct {
 	position      pixel.Vec
 	orig          pixel.Vec
 	timeLoc       string
-	drawerManager managers.DrawerManager
+	drawerManager *managers.DrawerManager
 }
 
 func (p *CountryPrefab) Update(frame int, position pixel.Vec, orig pixel.Vec, timeLoc string) {
@@ -57,7 +57,7 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	ecs.AddComponent(countryEntity, textComponent)
 	ecs.AddComponent(countryEntity, hoverComponent)
 
-	p.drawerManager.AddDefault(ecs.Level5, drawComponent)
-	p.drawerManager.AddDefault(ecs.Level4, textComponent)
-	p.drawerManager.AddDefault(ecs.Level7, hoverComponent)
+	p.drawerManager.Enqueue(managers.FIVE, true, drawComponent)
+	p.drawerManager.Enqueue(managers.FOUR, true, textComponent)
+	p.drawerManager.Enqueue(managers.SEVEN, true, hoverComponent)
 }

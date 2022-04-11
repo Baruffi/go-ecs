@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	DebugStartDrawing managers.EventCall = iota
-	DebugStopDrawing
+	DebugDraw managers.EventCall = iota
 )
 
 type MainUpdater struct {
@@ -29,8 +28,8 @@ type MainUpdater struct {
 	CountryUpdater
 
 	*pixelgl.Window
-	managers.EventManager
-	managers.DrawerManager
+	*managers.EventManager
+	*managers.DrawerManager
 }
 
 func (u *MainUpdater) Update(dt float64) {
@@ -40,18 +39,18 @@ func (u *MainUpdater) Update(dt float64) {
 	u.CountryUpdater.Update(u.Window, dt)
 
 	if !u.EventManager.Executing() {
-		u.EventManager.AddT2(func() {
+		u.EventManager.EnqueueEvent(func() {
 			fmt.Printf("TEST START ON %d\n", u.EventManager.GetTaskCount())
-			u.EventManager.AddT1(DebugStartDrawing)
-			time.Sleep(time.Second)
-			u.EventManager.AddT1(DebugStopDrawing)
+			for i := 0; i < 10; i++ {
+				u.EventManager.EnqueueCall(DebugDraw)
+			}
 			time.Sleep(time.Second)
 			fmt.Printf("TEST COMPLETE ON %d\n", u.EventManager.GetTaskCount())
 		})
 	}
 }
 
-func NewScene(win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) *ecs.Scene {
+func NewScene(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) *ecs.Scene {
 	updater := &MainUpdater{}
 	mainScene := ecs.NewScene(updater)
 	configureScene(mainScene, updater, win, eventManager, drawerManager)
@@ -59,7 +58,7 @@ func NewScene(win *pixelgl.Window, eventManager managers.EventManager, drawerMan
 	return mainScene
 }
 
-func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventManager managers.EventManager, drawerManager managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
+func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
 	prefab := CountryPrefab{
 		frame:         frame,
 		position:      position,
@@ -70,7 +69,7 @@ func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, tim
 	return ecs.NewEntityFactory(s, prefab)
 }
 
-func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) {
+func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
 	cameraMatrix := &components.CameraComponent{}
 	cameraMatrix.Init(1.0, 1.2, true)
 	cameraCollider := &components.ColliderComponent{}
@@ -124,9 +123,9 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	countries := []ecs.Entity{initialCountry, secondCountry}
 
 	// Map every component that will be always drawn
-	drawerManager.AddDefault(ecs.Level2, UICanvas)
-	drawerManager.AddDefault(ecs.Level7, worldMapCollider, cameraCollider)
-	drawerManager.AddDefault(ecs.Level9, worldMapBackdrop)
+	drawerManager.Enqueue(managers.TWO, true, UICanvas)
+	drawerManager.Enqueue(managers.SEVEN, true, worldMapCollider, cameraCollider)
+	drawerManager.Enqueue(managers.NINE, true, worldMapBackdrop)
 
 	// More debug stuff
 	debugImd := imdraw.New(nil)
@@ -136,11 +135,8 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	debugImd.Push(pixel.V(10, 10))
 	debugImd.Push(pixel.V(10, 0))
 	debugImd.Polygon(5.0)
-	eventManager.SetDefault(DebugStartDrawing, func() {
-		drawerManager.AddDefault(ecs.Level0, debugImd)
-	})
-	eventManager.SetDefault(DebugStopDrawing, func() {
-		drawerManager.UnsetDefault(ecs.Level0)
+	eventManager.SetMapping(DebugDraw, func() {
+		drawerManager.Enqueue(managers.ZERO, false, debugImd)
 	})
 
 	// Map the necessary entities onto the updater
