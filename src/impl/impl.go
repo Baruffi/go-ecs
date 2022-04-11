@@ -31,14 +31,14 @@ func setupWindow() *pixelgl.Window {
 	return win
 }
 
-func setupManagers(win *pixelgl.Window) (managers.EventManager, managers.DrawerManager) {
+func setupManagers(win *pixelgl.Window) (*managers.EventManager, *managers.DrawerManager) {
 	eventManager := managers.NewEventManager(10, 10, 5*time.Second)
 	drawerManager := managers.NewDrawerManager(win)
 
 	return eventManager, drawerManager
 }
 
-func setupStage(win *pixelgl.Window, eventManager managers.EventManager, drawerManager managers.DrawerManager) ecs.Stage {
+func setupStage(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) ecs.Stage {
 	mainScene := mainScene.NewScene(win, eventManager, drawerManager)
 	scenes := map[string]*ecs.Scene{
 		MainSceneId: mainScene,
