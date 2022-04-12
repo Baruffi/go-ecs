@@ -52,10 +52,10 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	area := pixel.R(p.position.X-frameScaleStep, p.position.Y-frameScaleStep, p.position.X+frameScaleStep, p.position.Y+frameScaleStep)
 	hoverComponent.Init(area, p.position, 1.0, 0.0, 1.0)
 
-	ecs.AddComponent(countryEntity, timeTag)
-	ecs.AddComponent(countryEntity, drawComponent)
-	ecs.AddComponent(countryEntity, textComponent)
-	ecs.AddComponent(countryEntity, hoverComponent)
+	ecs.Add(countryEntity, timeTag)
+	ecs.Add(countryEntity, drawComponent)
+	ecs.Add(countryEntity, textComponent)
+	ecs.Add(countryEntity, hoverComponent)
 
 	p.drawerManager.Enqueue(managers.FIVE, true, drawComponent)
 	p.drawerManager.Enqueue(managers.FOUR, true, textComponent)

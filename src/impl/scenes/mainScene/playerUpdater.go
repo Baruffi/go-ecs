@@ -15,7 +15,7 @@ type PlayerUpdater struct {
 }
 
 func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
-	if camera, ok := ecs.GetComponent[*components.Combiner[*components.CameraComponent, *components.ColliderComponent]](u.Player); ok {
+	if camera, ok := ecs.Get[*components.Combiner[*components.CameraComponent, *components.ColliderComponent]](u.Player); ok {
 		cameraComponent := camera.GetFirst()
 		cameraCollider := camera.GetSecond()
 		if cameraComponent.Active {
@@ -38,7 +38,7 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 			cameraCollider.Grow(-mouseScroll.Y)
 			cameraCollider.Update(cameraComponent.Unproject(mousePosition))
 
-			if worldMap, ok := ecs.GetComponent[*components.Combiner[*components.DrawComponent, *components.ColliderComponent]](u.World); ok {
+			if worldMap, ok := ecs.Get[*components.Combiner[*components.DrawComponent, *components.ColliderComponent]](u.World); ok {
 				worldMapCollider := worldMap.GetSecond()
 
 				if worldMapCollider.CollidesVec(cameraCollider.Area.Min) && worldMapCollider.CollidesVec(cameraCollider.Area.Max) {
@@ -53,7 +53,7 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 
 					w.SetMatrix(cameraComponent.Matrix)
 
-					if UICanvas, ok := ecs.GetComponent[*components.CanvasComponent](u.UI); ok {
+					if UICanvas, ok := ecs.Get[*components.CanvasComponent](u.UI); ok {
 						UICanvas.InverseTransform(cameraComponent.Unproject(mousePosition), cameraComponent.DeltaPos, cameraComponent.DeltaScale, cameraComponent.Scale)
 					}
 				} else {
@@ -64,11 +64,11 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 			}
 
 			for _, country := range u.Countries {
-				if hoverComponent, ok := ecs.GetComponent[*components.ColliderComponent](country); ok {
-					if textComponent, ok := ecs.GetComponent[*components.TextComponent](country); ok {
+				if hoverComponent, ok := ecs.Get[*components.ColliderComponent](country); ok {
+					if textComponent, ok := ecs.Get[*components.TextComponent](country); ok {
 						if hoverComponent.CollidesVec(cameraComponent.Unproject(mousePosition)) {
-							if timeTag, ok := ecs.GetComponent[*components.TagComponent](country); ok {
-								if clock, ok := ecs.GetComponent[*components.Combiner[*components.TimeComponent, *components.TextComponent]](u.UI); ok {
+							if timeTag, ok := ecs.Get[*components.TagComponent](country); ok {
+								if clock, ok := ecs.Get[*components.Combiner[*components.TimeComponent, *components.TextComponent]](u.UI); ok {
 									timeComponent := clock.GetFirst()
 									timeComponent.UpdateLocation(timeTag.Tag)
 								}
