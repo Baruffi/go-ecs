@@ -9,6 +9,7 @@ import (
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes"
+	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
@@ -41,9 +42,9 @@ func (u *MainUpdater) Update(dt float64) {
 	if !u.EventManager.Executing() {
 		u.EventManager.EnqueueEvent(func() {
 			fmt.Printf("TEST START ON %d\n", u.EventManager.GetTaskCount())
-			for i := 0; i < 10; i++ {
-				u.EventManager.EnqueueCall(DebugDraw)
-			}
+			// for i := 0; i < 10; i++ {
+			// 	u.EventManager.EnqueueCall(DebugDraw)
+			// }
 			time.Sleep(time.Second)
 			fmt.Printf("TEST COMPLETE ON %d\n", u.EventManager.GetTaskCount())
 		})
@@ -123,9 +124,9 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	countries := []ecs.Entity{initialCountry, secondCountry}
 
 	// Map every component that will be always drawn
-	drawerManager.Enqueue(managers.TWO, true, UICanvas)
-	drawerManager.Enqueue(managers.SEVEN, true, worldMapCollider, cameraCollider)
-	drawerManager.Enqueue(managers.NINE, true, worldMapBackdrop)
+	drawerManager.Enqueue(queue.TWO, true, UICanvas)
+	drawerManager.Enqueue(queue.SEVEN, true, worldMapCollider, cameraCollider)
+	drawerManager.Enqueue(queue.NINE, true, worldMapBackdrop)
 
 	// More debug stuff
 	debugImd := imdraw.New(nil)
@@ -136,7 +137,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	debugImd.Push(pixel.V(10, 0))
 	debugImd.Polygon(5.0)
 	eventManager.SetMapping(DebugDraw, func() {
-		drawerManager.Enqueue(managers.ZERO, false, debugImd)
+		drawerManager.Enqueue(queue.ZERO, false, debugImd)
 	})
 
 	// Map the necessary entities onto the updater
