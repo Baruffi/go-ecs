@@ -6,19 +6,6 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 )
 
-const (
-	ZERO queue.PriorityLevel = 9 - iota
-	ONE
-	TWO
-	THREE
-	FOUR
-	FIVE
-	SIX
-	SEVEN
-	EIGHT
-	NINE
-)
-
 type Drawer interface {
 	Draw(pixel.Target)
 }

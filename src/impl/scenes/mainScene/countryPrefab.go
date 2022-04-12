@@ -7,6 +7,7 @@ import (
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes"
+	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
@@ -57,7 +58,7 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	ecs.Add(countryEntity, textComponent)
 	ecs.Add(countryEntity, hoverComponent)
 
-	p.drawerManager.Enqueue(managers.FIVE, true, drawComponent)
-	p.drawerManager.Enqueue(managers.FOUR, true, textComponent)
-	p.drawerManager.Enqueue(managers.SEVEN, true, hoverComponent)
+	p.drawerManager.Enqueue(queue.FIVE, true, drawComponent)
+	p.drawerManager.Enqueue(queue.FOUR, true, textComponent)
+	p.drawerManager.Enqueue(queue.SEVEN, true, hoverComponent)
 }
