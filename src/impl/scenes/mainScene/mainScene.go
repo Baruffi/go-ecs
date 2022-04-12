@@ -42,9 +42,9 @@ func (u *MainUpdater) Update(dt float64) {
 	if !u.EventManager.Executing() {
 		u.EventManager.EnqueueEvent(func() {
 			fmt.Printf("TEST START ON %d\n", u.EventManager.GetTaskCount())
-			// for i := 0; i < 10; i++ {
-			// 	u.EventManager.EnqueueCall(DebugDraw)
-			// }
+			for i := 0; i < 500; i++ {
+				u.EventManager.EnqueueCall(DebugDraw)
+			}
 			time.Sleep(time.Second)
 			fmt.Printf("TEST COMPLETE ON %d\n", u.EventManager.GetTaskCount())
 		})
