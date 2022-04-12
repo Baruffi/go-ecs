@@ -56,7 +56,7 @@ func (q *PriorityQueue[T]) Enqueue(item T) error {
 func (q *PriorityQueue[T]) Peek() (item T, err error) {
 	if q.totalLen > 0 {
 		for len(q.buckets[q.queueHead]) == 0 {
-			q.queueHead++
+			q.queueHead = (q.queueHead + 1) % 10
 		}
 		item = q.buckets[q.queueHead][q.bucketHead]
 	} else {
@@ -111,7 +111,7 @@ func (q *PriorityQueue[T]) Rotate(amount int) {
 func (q *PriorityQueue[T]) Dequeue() (item T, err error) {
 	if q.totalLen > 0 {
 		for len(q.buckets[q.queueHead]) == 0 {
-			q.queueHead++
+			q.queueHead = (q.queueHead + 1) % 10
 		}
 		item = q.buckets[q.queueHead][q.bucketHead]
 		q.buckets[q.queueHead] = append(q.buckets[q.queueHead][:q.bucketHead], q.buckets[q.queueHead][q.bucketHead+1:]...)

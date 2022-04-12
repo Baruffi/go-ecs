@@ -30,7 +30,9 @@ func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 }
 
 func (m *DrawerManager) Enqueue(level queue.PriorityLevel, isPersistent bool, drawers ...Drawer) error {
-	m.drawerQueue.UnsafePtr.SetEnqueueLevel(level)
+	m.drawerQueue.SafeWrite(func(queue *queue.PriorityQueue[DrawerWrapper]) {
+		queue.SetEnqueueLevel(level)
+	})
 	for _, drawer := range drawers {
 		err := m.drawerQueue.Enqueue(DrawerWrapper{isPersistent, drawer})
 		if err != nil {
