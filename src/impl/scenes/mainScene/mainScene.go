@@ -106,14 +106,14 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	}
 
 	UI := s.CreateEntity()
-	ecs.AddComponent(UI, UICanvas)
-	ecs.AddComponent(UI, clock)
+	ecs.Add(UI, UICanvas)
+	ecs.Add(UI, clock)
 
 	world := s.CreateEntity()
-	ecs.AddComponent(world, worldMap)
+	ecs.Add(world, worldMap)
 
 	player := s.CreateEntity()
-	ecs.AddComponent(player, camera)
+	ecs.Add(player, camera)
 
 	// TODO: Temporary. Probably not going to generate initial countries here
 	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
