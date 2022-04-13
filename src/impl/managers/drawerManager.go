@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"example.com/v0/src/ecs"
 	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -11,8 +12,8 @@ type Drawer interface {
 }
 
 type DrawerWrapper struct {
-	isPersistent bool
-	drawer       Drawer
+	owner  ecs.Entity
+	drawer Drawer
 }
 
 type DrawerManager struct {
@@ -29,12 +30,12 @@ func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 	}
 }
 
-func (m *DrawerManager) Enqueue(level queue.PriorityLevel, isPersistent bool, drawers ...Drawer) error {
+func (m *DrawerManager) Enqueue(level queue.PriorityLevel, owner ecs.Entity, drawers ...Drawer) error {
 	var err error
 	m.drawerQueue.SafeWrite(func(queue *queue.PriorityQueue[DrawerWrapper]) {
 		queue.SetEnqueueLevel(level)
 		for _, drawer := range drawers {
-			err = queue.Enqueue(DrawerWrapper{isPersistent, drawer})
+			err = queue.Enqueue(DrawerWrapper{owner, drawer})
 		}
 	})
 	return err
@@ -51,7 +52,7 @@ type drawerHandler struct {
 func (h *drawerHandler) Handle(wrapper DrawerWrapper) queue.HandlerResult {
 	wrapper.drawer.Draw(h.window)
 
-	if wrapper.isPersistent {
+	if wrapper.owner.IsAlive() {
 		return queue.NOT_DONE
 	}
 	return queue.DONE
