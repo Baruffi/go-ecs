@@ -69,7 +69,7 @@ func (q *PriorityQueue[T]) Peek() (item T, err error) {
 func (q *PriorityQueue[T]) Rotate(amount int) {
 	if q.totalLen > 0 {
 		head := (q.bucketHead + amount) % q.totalLen
-		if head > 0 {
+		if head >= 0 {
 			for level, bucket := range q.buckets[q.queueHead:] {
 				bucketLength := len(bucket)
 				if head < bucketLength {

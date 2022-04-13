@@ -51,15 +51,23 @@ func (scene *Scene) getPoolId(component any) (id int) {
 	return id
 }
 
+func (scene *Scene) HasEntity(entityId EntityId) bool {
+	if IsEntityValid(entityId) && IsEntityValid(scene.entities[GetEntityIndex(entityId)]) && entityId == scene.entities[GetEntityIndex(entityId)] {
+		return true
+	}
+	return false
+}
+
 func (scene *Scene) CreateEntity() Entity {
 	if IsEntityValid(scene.destroyed) {
 		destroyed := scene.destroyed
-		if IsEntityValid(scene.entities[GetEntityIndex(destroyed)]) {
-			scene.destroyed = scene.entities[GetEntityIndex(destroyed)]
+		destroyedIndex := GetEntityIndex(destroyed)
+		if IsEntityValid(scene.entities[destroyedIndex]) {
+			scene.destroyed = scene.entities[destroyedIndex]
 		} else {
 			scene.destroyed = CreateEntityId(INVALID_ENTITY, 0)
 		}
-		scene.entities[GetEntityIndex(destroyed)] = destroyed
+		scene.entities[destroyedIndex] = destroyed
 		return Entity{
 			id:    destroyed,
 			scene: scene,
@@ -75,29 +83,34 @@ func (scene *Scene) CreateEntity() Entity {
 }
 
 func (scene *Scene) RemoveEntity(entityId EntityId) {
-	if IsEntityValid(entityId) && IsEntityValid(scene.entities[GetEntityIndex(entityId)]) {
-		entityVersion := GetEntityVersion(scene.entities[GetEntityIndex(entityId)])
-		scene.entities[GetEntityIndex(entityId)] = scene.destroyed
-		scene.destroyed = CreateEntityId(GetEntityIndex(entityId), entityVersion+1)
+	if scene.HasEntity(entityId) {
+		entityIndex := GetEntityIndex(entityId)
+		scene.entities[entityIndex] = scene.destroyed
+		scene.destroyed = CreateEntityId(entityIndex, GetEntityVersion(entityId)+1)
 		for _, pool := range scene.componentPools {
-			if pool.HasEntity(GetEntityIndex(entityId)) {
-				pool.RemoveEntity(GetEntityIndex(entityId))
+			if pool.HasEntity(entityIndex) {
+				pool.RemoveEntity(entityIndex)
 			}
 		}
 	}
 }
 
 func HasComponent[T any](scene *Scene, entityId EntityId) bool {
-	var example *T
-	poolId := scene.getPoolId(example)
-	if poolId < len(scene.componentPools) {
-		pool := scene.componentPools[poolId]
-		return pool.HasEntity(GetEntityIndex(entityId))
+	if scene.HasEntity(entityId) {
+		var example *T
+		poolId := scene.getPoolId(example)
+		if poolId < len(scene.componentPools) {
+			pool := scene.componentPools[poolId]
+			return pool.HasEntity(GetEntityIndex(entityId))
+		}
 	}
 	return false
 }
 
 func Assign[T any](scene *Scene, entityId EntityId) *T {
+	if !scene.HasEntity(entityId) {
+		panic("cannot assign a component to an entity that is not in the scene")
+	}
 	var component T
 	poolId := scene.getPoolId(&component)
 	if len(scene.componentPools) <= poolId {
@@ -107,28 +120,40 @@ func Assign[T any](scene *Scene, entityId EntityId) *T {
 		scene.componentPoolCounter++
 	}
 	pool := scene.componentPools[poolId].(*ComponentPool[T])
-	pool.entityIndexes = append(pool.entityIndexes, GetEntityIndex(entityId))
+	entityIndex := GetEntityIndex(entityId)
+	entityPage := entityIndex / PAGE_SIZE
+	pool.entityIndexes = append(pool.entityIndexes, entityIndex)
 	pool.components = append(pool.components, &component)
-	for len(pool.componentIndexes) <= int(GetEntityIndex(entityId)) {
-		pool.componentIndexes = append(pool.componentIndexes, INVALID_COMPONENT)
+	for len(pool.pages) <= int(entityPage) {
+		pool.pages = append(pool.pages, nil)
 	}
-	pool.componentIndexes[GetEntityIndex(entityId)] = ComponentIndex(len(pool.components) - 1)
+	if pool.pages[entityPage] == nil {
+		newPage := make([]ComponentIndex, PAGE_SIZE)
+		for i := range newPage {
+			newPage[i] = INVALID_COMPONENT
+		}
+		pool.pages[entityPage] = newPage
+	}
+	pool.pages[entityPage][entityIndex%PAGE_SIZE] = ComponentIndex(len(pool.components) - 1)
 	return &component
 }
 
-func GetComponent[T any](scene *Scene, entityId EntityId) (component *T, ok bool) {
-	poolId := scene.getPoolId(component)
-	if poolId < len(scene.componentPools) {
-		pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
-		if ok {
-			componentIndex := pool.componentIndexes[GetEntityIndex(entityId)]
-			if componentIndex != INVALID_COMPONENT {
-				component = pool.components[componentIndex]
-				return component, true
+func GetComponent[T any](scene *Scene, entityId EntityId) (*T, bool) {
+	if scene.HasEntity(entityId) {
+		var example *T
+		poolId := scene.getPoolId(example)
+		if poolId < len(scene.componentPools) {
+			pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
+			if ok {
+				entityIndex := GetEntityIndex(entityId)
+				if pool.HasEntity(entityIndex) {
+					component := pool.components[pool.pages[entityIndex/PAGE_SIZE][entityIndex%PAGE_SIZE]]
+					return component, true
+				}
 			}
 		}
 	}
-	return component, false
+	return nil, false
 }
 
 func View[T any](scene *Scene) (components []*T, ok bool) {

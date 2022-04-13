@@ -62,26 +62,25 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.Ev
 	worldMap.T1 = worldMapBackdrop
 	worldMap.T2 = worldMapCollider
 
-	// TODO: Temporary. Probably not going to generate initial countries here
-	initialCountryFactory := countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
-	initialCountry := initialCountryFactory.Generate()
-	initialCountryFactory.Prefab.Update(0, pixel.V(-100, -100), pixel.ZV, "MST")
-	secondCountry := initialCountryFactory.Generate()
-	countries := []ecs.Entity{initialCountry, secondCountry}
-
 	// Map every component that will be always drawn
-	drawerManager.Enqueue(queue.TWO, true, UICanvas)
-	drawerManager.Enqueue(queue.SEVEN, true, worldMap.GetSecond(), camera.GetSecond())
-	drawerManager.Enqueue(queue.NINE, true, worldMap.GetFirst())
+	drawerManager.Enqueue(queue.TWO, UI, UICanvas)
+	drawerManager.Enqueue(queue.SEVEN, player, worldMap.GetSecond(), camera.GetSecond())
+	drawerManager.Enqueue(queue.NINE, world, worldMap.GetFirst())
 
 	// Map the necessary entities onto the updater
 	u := s.Updater.(MainUpdater)
+
 	u.UI = UI
 	u.World = world
-	u.Countries = countries
 	u.Player = player
-	u.Window = win
-	u.EventManager = eventManager
-	u.DrawerManager = drawerManager
+
+	u.window = win
+	u.eventManager = eventManager
+	u.drawerManager = drawerManager
+
 	s.Updater = u
+
+	// Factory stuff. Temporary
+	countries = make([]ecs.Entity, 0)
+	countryFactoryHolder = countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
 }
