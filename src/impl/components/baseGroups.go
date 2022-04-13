@@ -5,12 +5,12 @@ type Combiner[T1 any, T2 any] struct {
 	T2 T2
 }
 
-func (c *Combiner[T1, T2]) GetFirst() T1 {
-	return c.T1
+func (c *Combiner[T1, T2]) GetFirst() *T1 {
+	return &c.T1
 }
 
-func (c *Combiner[T1, T2]) GetSecond() T2 {
-	return c.T2
+func (c *Combiner[T1, T2]) GetSecond() *T2 {
+	return &c.T2
 }
 
 type TaggedCombiner[T1 any, T2 any] struct {

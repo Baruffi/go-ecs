@@ -12,14 +12,14 @@ type ComponentPool[T any] struct {
 	componentIndexes []ComponentIndex // sparse slice of ComponentIndex, which has indices matching the respective entityIndex
 	entityIndexes    []EntityIndex    // packed slice of EntityIndex, which has indices matching the respective componentIndex
 
-	components []T
+	components []*T
 }
 
 func NewComponentPool[T any]() *ComponentPool[T] {
 	return &ComponentPool[T]{
 		componentIndexes: make([]ComponentIndex, 0),
 		entityIndexes:    make([]EntityIndex, 0),
-		components:       make([]T, 0),
+		components:       make([]*T, 0),
 	}
 }
 

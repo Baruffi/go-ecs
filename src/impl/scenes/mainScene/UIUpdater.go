@@ -13,7 +13,7 @@ type UIUpdater struct {
 }
 
 func (u *UIUpdater) Update(w *pixelgl.Window, dt float64) {
-	if clock, ok := ecs.Get[*components.Combiner[*components.TimeComponent, *components.TextComponent]](u.UI); ok {
+	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.UI); ok {
 		u.UpdateClock(clock.GetFirst(), clock.GetSecond())
 	}
 }
@@ -25,7 +25,7 @@ func (u *UIUpdater) UpdateClock(timeComponent *components.TimeComponent, textCom
 		timeComponent.UpdateTime()
 		timeStr := fmt.Sprintf("TIME: %s", timeComponent.String())
 		textComponent.Write(timeStr)
-		if UICanvas, ok := ecs.Get[*components.CanvasComponent](u.UI); ok {
+		if UICanvas, ok := ecs.Get[components.CanvasComponent](u.UI); ok {
 			UICanvas.Clear()
 			textComponent.Draw(UICanvas.Canvas)
 		}

@@ -40,10 +40,10 @@ func Has[T any](entity Entity) bool {
 	return HasComponent[T](entity.scene, entity.id)
 }
 
-func Add[T any](entity Entity) T {
+func Add[T any](entity Entity) *T {
 	return Assign[T](entity.scene, entity.id)
 }
 
-func Get[T any](entity Entity) (component T, ok bool) {
+func Get[T any](entity Entity) (component *T, ok bool) {
 	return GetComponent[T](entity.scene, entity.id)
 }
