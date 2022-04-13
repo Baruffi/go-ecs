@@ -21,7 +21,7 @@ type MainUpdater struct {
 	DrawerManager *managers.DrawerManager
 }
 
-func (u *MainUpdater) Update(dt float64) {
+func (u MainUpdater) Update(dt float64) {
 	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.UI); ok {
 		timeComponent := clock.GetFirst()
 		textComponent := clock.GetSecond()

@@ -28,9 +28,10 @@ type Scene struct {
 	componentPools       []AnyComponentPool
 }
 
-func NewScene(updater Updater) *Scene {
+func NewScene[U Updater]() *Scene {
+	var u U
 	return &Scene{
-		Updater:          updater,
+		Updater:          u,
 		destroyed:        CreateEntityId(INVALID_ENTITY, 0),
 		entities:         make([]EntityId, 0),
 		componentPoolMap: make(map[reflect.Type]int),
