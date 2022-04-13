@@ -1,4 +1,4 @@
-package mainScene
+package countryFactory
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/managers"
-	"example.com/v0/src/impl/scenes"
+	"example.com/v0/src/impl/tools"
 	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/text"
@@ -34,7 +34,7 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	timeTag.Init(p.timeLoc)
 
 	drawComponent := ecs.Add[components.DrawComponent](countryEntity)
-	spritesheet, err := scenes.LoadPicture("../assets/countries.png")
+	spritesheet, err := tools.LoadPicture("./assets/countryFactory/countries.png")
 	if err != nil {
 		panic(err)
 	}

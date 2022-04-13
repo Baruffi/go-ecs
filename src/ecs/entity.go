@@ -33,6 +33,7 @@ type Entity struct {
 
 func (entity *Entity) Die() {
 	entity.scene.RemoveEntity(entity.id)
+	entity.id = CreateEntityId(INVALID_ENTITY, 0)
 	entity.scene = nil
 }
 

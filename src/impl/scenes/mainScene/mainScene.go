@@ -1,55 +1,20 @@
 package mainScene
 
 import (
-	"fmt"
 	"image/color"
-	"time"
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/factories/countryFactory"
 	"example.com/v0/src/impl/managers"
-	"example.com/v0/src/impl/scenes"
+	"example.com/v0/src/impl/tools"
 	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 )
-
-const (
-	DebugDraw managers.EventCall = iota
-)
-
-type MainUpdater struct {
-	PlayerUpdater
-	UIUpdater
-	WorldUpdater
-	CountryUpdater
-
-	*pixelgl.Window
-	*managers.EventManager
-	*managers.DrawerManager
-}
-
-func (u *MainUpdater) Update(dt float64) {
-	u.PlayerUpdater.Update(u.Window, dt)
-	u.UIUpdater.Update(u.Window, dt)
-	u.WorldUpdater.Update(u.Window, dt)
-	u.CountryUpdater.Update(u.Window, dt)
-
-	if !u.EventManager.Executing() {
-		u.EventManager.EnqueueEvent(func() {
-			fmt.Printf("TEST START ON %d\n", u.EventManager.GetTaskCount())
-			for i := 0; i < 500; i++ {
-				u.EventManager.EnqueueCall(DebugDraw)
-			}
-			time.Sleep(time.Second)
-			fmt.Printf("TEST COMPLETE ON %d\n", u.EventManager.GetTaskCount())
-		})
-	}
-}
 
 func NewScene(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) *ecs.Scene {
 	updater := &MainUpdater{}
@@ -57,17 +22,6 @@ func NewScene(win *pixelgl.Window, eventManager *managers.EventManager, drawerMa
 	configureScene(mainScene, updater, win, eventManager, drawerManager)
 
 	return mainScene
-}
-
-func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
-	prefab := CountryPrefab{
-		frame:         frame,
-		position:      position,
-		orig:          orig,
-		timeLoc:       timeLoc,
-		drawerManager: drawerManager,
-	}
-	return ecs.NewEntityFactory(s, prefab)
 }
 
 func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
@@ -98,7 +52,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	clock.T2 = clockText
 
 	worldMapBackdrop := components.DrawComponent{}
-	spritesheet, err := scenes.LoadPicture("../assets/A_large_blank_world_map_with_oceans_marked_in_blue.png")
+	spritesheet, err := tools.LoadPicture("./assets/mainScene/A_large_blank_world_map_with_oceans_marked_in_blue.png")
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +64,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	worldMap.T2 = worldMapCollider
 
 	// TODO: Temporary. Probably not going to generate initial countries here
-	initialCountryFactory := NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
+	initialCountryFactory := countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
 	initialCountry := initialCountryFactory.Generate()
 	initialCountryFactory.Prefab.Update(0, pixel.V(-100, -100), pixel.ZV, "MST")
 	secondCountry := initialCountryFactory.Generate()
@@ -121,27 +75,11 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	drawerManager.Enqueue(queue.SEVEN, true, worldMap.GetSecond(), camera.GetSecond())
 	drawerManager.Enqueue(queue.NINE, true, worldMap.GetFirst())
 
-	// More debug stuff
-	debugImd := imdraw.New(nil)
-	debugImd.Color = color.RGBA{255, 0, 0, 255}
-	debugImd.Push(pixel.ZV)
-	debugImd.Push(pixel.V(0, 10))
-	debugImd.Push(pixel.V(10, 10))
-	debugImd.Push(pixel.V(10, 0))
-	debugImd.Polygon(5.0)
-	eventManager.SetMapping(DebugDraw, func() {
-		drawerManager.Enqueue(queue.ZERO, false, debugImd)
-	})
-
 	// Map the necessary entities onto the updater
-	u.UIUpdater.UI = UI
-	u.WorldUpdater.World = world
-	u.CountryUpdater.Countries = countries
-	u.PlayerUpdater.Player = player
-	u.PlayerUpdater.UI = UI
-	u.PlayerUpdater.World = world
-	u.PlayerUpdater.Countries = countries
-
+	u.UI = UI
+	u.World = world
+	u.Countries = countries
+	u.Player = player
 	u.Window = win
 	u.EventManager = eventManager
 	u.DrawerManager = drawerManager
