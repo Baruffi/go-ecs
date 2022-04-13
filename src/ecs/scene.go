@@ -105,12 +105,12 @@ func Assign[T any](scene *Scene, entityId EntityId, component T) T {
 		scene.componentPoolCounter++
 	}
 	pool := scene.componentPools[poolId].(*ComponentPool[T])
-	pool.entityIds = append(pool.entityIds, GetEntityIndex(entityId))
+	pool.entityIndexes = append(pool.entityIndexes, GetEntityIndex(entityId))
 	pool.components = append(pool.components, component)
-	for len(pool.componentIds) <= int(GetEntityIndex(entityId)) {
-		pool.componentIds = append(pool.componentIds, INVALID_COMPONENT)
+	for len(pool.componentIndexes) <= int(GetEntityIndex(entityId)) {
+		pool.componentIndexes = append(pool.componentIndexes, INVALID_COMPONENT)
 	}
-	pool.componentIds[GetEntityIndex(entityId)] = ComponentIndex(len(pool.components) - 1)
+	pool.componentIndexes[GetEntityIndex(entityId)] = ComponentIndex(len(pool.components) - 1)
 	return component
 }
 
@@ -119,9 +119,9 @@ func GetComponent[T any](scene *Scene, entityId EntityId) (component T, ok bool)
 	if poolId < len(scene.componentPools) {
 		pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
 		if ok {
-			componentId := pool.componentIds[GetEntityIndex(entityId)]
-			if componentId != INVALID_COMPONENT {
-				component = pool.components[componentId]
+			componentIndex := pool.componentIndexes[GetEntityIndex(entityId)]
+			if componentIndex != INVALID_COMPONENT {
+				component = pool.components[componentIndex]
 				return component, true
 			}
 		}
