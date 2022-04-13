@@ -17,14 +17,13 @@ import (
 )
 
 func NewScene(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) *ecs.Scene {
-	updater := &MainUpdater{}
-	mainScene := ecs.NewScene(updater)
-	configureScene(mainScene, updater, win, eventManager, drawerManager)
+	mainScene := ecs.NewScene[MainUpdater]()
+	configureScene(mainScene, win, eventManager, drawerManager)
 
 	return mainScene
 }
 
-func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
+func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
 	UI := s.CreateEntity()
 	UICanvas := ecs.Add[components.CanvasComponent](UI)
 	clock := ecs.Add[components.Combiner[components.TimeComponent, components.TextComponent]](UI)
@@ -76,6 +75,7 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	drawerManager.Enqueue(queue.NINE, true, worldMap.GetFirst())
 
 	// Map the necessary entities onto the updater
+	u := s.Updater.(MainUpdater)
 	u.UI = UI
 	u.World = world
 	u.Countries = countries
@@ -83,4 +83,5 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 	u.Window = win
 	u.EventManager = eventManager
 	u.DrawerManager = drawerManager
+	s.Updater = u
 }
