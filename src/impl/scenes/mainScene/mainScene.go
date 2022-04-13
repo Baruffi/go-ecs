@@ -72,39 +72,39 @@ func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, tim
 
 func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
 	UI := s.CreateEntity()
-	UICanvas := ecs.Add[*components.CanvasComponent](UI)
-	clock := ecs.Add[*components.Combiner[*components.TimeComponent, *components.TextComponent]](UI)
+	UICanvas := ecs.Add[components.CanvasComponent](UI)
+	clock := ecs.Add[components.Combiner[components.TimeComponent, components.TextComponent]](UI)
 
 	world := s.CreateEntity()
-	worldMap := ecs.Add[*components.Combiner[*components.DrawComponent, *components.ColliderComponent]](world)
+	worldMap := ecs.Add[components.Combiner[components.DrawComponent, components.ColliderComponent]](world)
 
 	player := s.CreateEntity()
-	camera := ecs.Add[*components.Combiner[*components.CameraComponent, *components.ColliderComponent]](player)
+	camera := ecs.Add[components.Combiner[components.CameraComponent, components.ColliderComponent]](player)
 
-	cameraMatrix := &components.CameraComponent{}
+	cameraMatrix := components.CameraComponent{}
 	cameraMatrix.Init(1.0, 1.2, true)
-	cameraCollider := &components.ColliderComponent{}
+	cameraCollider := components.ColliderComponent{}
 	cameraCollider.Init(win.Bounds(), win.Bounds().Center(), 1.0, 1.0, 1.2)
 	camera.T1 = cameraMatrix
 	camera.T2 = cameraCollider
 
 	UICanvas.Init(win.Bounds(), color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-	clockTime := &components.TimeComponent{}
+	clockTime := components.TimeComponent{}
 	clockTime.Init("UTC", "Mon, 02 Jan 2006 15:04:05 MST")
-	clockText := &components.TextComponent{}
+	clockText := components.TextComponent{}
 	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black, 1)
 	clock.T1 = clockTime
 	clock.T2 = clockText
 
-	worldMapBackdrop := &components.DrawComponent{}
+	worldMapBackdrop := components.DrawComponent{}
 	spritesheet, err := scenes.LoadPicture("../assets/A_large_blank_world_map_with_oceans_marked_in_blue.png")
 	if err != nil {
 		panic(err)
 	}
 	worldMapBackdrop.Init(spritesheet, spritesheet.Bounds().Norm().W(), spritesheet.Bounds().Norm().H(), 1)
 	sprite, _ := worldMapBackdrop.PrepareFrame(0, pixel.ZV)
-	worldMapCollider := &components.ColliderComponent{}
+	worldMapCollider := components.ColliderComponent{}
 	worldMapCollider.Init(sprite.Frame(), pixel.ZV, worldMapBackdrop.SpriteScale, 0.0, 1.0)
 	worldMap.T1 = worldMapBackdrop
 	worldMap.T2 = worldMapCollider
@@ -118,8 +118,8 @@ func configureScene(s *ecs.Scene, u *MainUpdater, win *pixelgl.Window, eventMana
 
 	// Map every component that will be always drawn
 	drawerManager.Enqueue(queue.TWO, true, UICanvas)
-	drawerManager.Enqueue(queue.SEVEN, true, worldMapCollider, cameraCollider)
-	drawerManager.Enqueue(queue.NINE, true, worldMapBackdrop)
+	drawerManager.Enqueue(queue.SEVEN, true, worldMap.GetSecond(), camera.GetSecond())
+	drawerManager.Enqueue(queue.NINE, true, worldMap.GetFirst())
 
 	// More debug stuff
 	debugImd := imdraw.New(nil)

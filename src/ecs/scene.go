@@ -58,9 +58,9 @@ func (scene *Scene) CreateEntity() Entity {
 		} else {
 			scene.destroyed = CreateEntityId(INVALID_ENTITY, 0)
 		}
-		scene.entities[destroyed] = destroyed
+		scene.entities[GetEntityIndex(destroyed)] = destroyed
 		return Entity{
-			id:    scene.entities[destroyed],
+			id:    destroyed,
 			scene: scene,
 		}
 	} else {
@@ -87,7 +87,7 @@ func (scene *Scene) RemoveEntity(entityId EntityId) {
 }
 
 func HasComponent[T any](scene *Scene, entityId EntityId) bool {
-	var example T
+	var example *T
 	poolId := scene.getPoolId(example)
 	if poolId < len(scene.componentPools) {
 		pool := scene.componentPools[poolId]
@@ -96,26 +96,26 @@ func HasComponent[T any](scene *Scene, entityId EntityId) bool {
 	return false
 }
 
-func Assign[T any](scene *Scene, entityId EntityId) T {
+func Assign[T any](scene *Scene, entityId EntityId) *T {
 	var component T
-	poolId := scene.getPoolId(component)
+	poolId := scene.getPoolId(&component)
 	if len(scene.componentPools) <= poolId {
-		reflectType := reflect.TypeOf(component)
+		reflectType := reflect.TypeOf(&component)
 		scene.componentPoolMap[reflectType] = poolId
 		scene.componentPools = append(scene.componentPools, NewComponentPool[T]())
 		scene.componentPoolCounter++
 	}
 	pool := scene.componentPools[poolId].(*ComponentPool[T])
 	pool.entityIndexes = append(pool.entityIndexes, GetEntityIndex(entityId))
-	pool.components = append(pool.components, component)
+	pool.components = append(pool.components, &component)
 	for len(pool.componentIndexes) <= int(GetEntityIndex(entityId)) {
 		pool.componentIndexes = append(pool.componentIndexes, INVALID_COMPONENT)
 	}
 	pool.componentIndexes[GetEntityIndex(entityId)] = ComponentIndex(len(pool.components) - 1)
-	return component
+	return &component
 }
 
-func GetComponent[T any](scene *Scene, entityId EntityId) (component T, ok bool) {
+func GetComponent[T any](scene *Scene, entityId EntityId) (component *T, ok bool) {
 	poolId := scene.getPoolId(component)
 	if poolId < len(scene.componentPools) {
 		pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
@@ -130,8 +130,8 @@ func GetComponent[T any](scene *Scene, entityId EntityId) (component T, ok bool)
 	return component, false
 }
 
-func View[T any](scene *Scene) (components []T, ok bool) {
-	var example T
+func View[T any](scene *Scene) (components []*T, ok bool) {
+	var example *T
 	poolId := scene.getPoolId(example)
 	pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
 	if ok {

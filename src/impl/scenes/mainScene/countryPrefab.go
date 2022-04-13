@@ -30,10 +30,10 @@ func (p *CountryPrefab) Update(frame int, position pixel.Vec, orig pixel.Vec, ti
 }
 
 func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
-	timeTag := ecs.Add[*components.TagComponent](countryEntity)
+	timeTag := ecs.Add[components.TagComponent](countryEntity)
 	timeTag.Init(p.timeLoc)
 
-	drawComponent := ecs.Add[*components.DrawComponent](countryEntity)
+	drawComponent := ecs.Add[components.DrawComponent](countryEntity)
 	spritesheet, err := scenes.LoadPicture("../assets/countries.png")
 	if err != nil {
 		panic(err)
@@ -44,12 +44,12 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	drawComponent.Init(spritesheet, frameSizeX, frameSizeY, spriteScale)
 	drawComponent.PrepareFrame(p.frame, p.position)
 
-	textComponent := ecs.Add[*components.TextComponent](countryEntity)
+	textComponent := ecs.Add[components.TextComponent](countryEntity)
 	atlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
 	textComponent.Init(p.position.Add(p.orig), atlas, colornames.Black, 2)
 
 	frameScaleStep := math.Sqrt(frameSizeX*frameSizeY) * spriteScale / 2
-	hoverComponent := ecs.Add[*components.ColliderComponent](countryEntity)
+	hoverComponent := ecs.Add[components.ColliderComponent](countryEntity)
 	area := pixel.R(p.position.X-frameScaleStep, p.position.Y-frameScaleStep, p.position.X+frameScaleStep, p.position.Y+frameScaleStep)
 	hoverComponent.Init(area, p.position, 1.0, 0.0, 1.0)
 
