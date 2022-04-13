@@ -1,28 +1,51 @@
 package mainScene
 
 import (
+	"fmt"
+
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
+	"example.com/v0/src/impl/managers"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )
 
-type PlayerUpdater struct {
+type MainUpdater struct {
 	Player    ecs.Entity
 	Countries []ecs.Entity
 	World     ecs.Entity
 	UI        ecs.Entity
+
+	Window        *pixelgl.Window
+	EventManager  *managers.EventManager
+	DrawerManager *managers.DrawerManager
 }
 
-func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
+func (u *MainUpdater) Update(dt float64) {
+	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.UI); ok {
+		timeComponent := clock.GetFirst()
+		textComponent := clock.GetSecond()
+		select {
+		case <-timeComponent.Ticker.C:
+			textComponent.Clear()
+			timeComponent.UpdateTime()
+			timeStr := fmt.Sprintf("TIME: %s", timeComponent.String())
+			textComponent.Write(timeStr)
+			if UICanvas, ok := ecs.Get[components.CanvasComponent](u.UI); ok {
+				UICanvas.Clear()
+				textComponent.Draw(UICanvas.Canvas)
+			}
+		default:
+		}
+	}
 	if camera, ok := ecs.Get[components.Combiner[components.CameraComponent, components.ColliderComponent]](u.Player); ok {
 		cameraComponent := camera.GetFirst()
 		cameraCollider := camera.GetSecond()
 		if cameraComponent.Active {
-			leftClickHeld := w.Pressed(pixelgl.MouseButtonLeft)
-			mousePosition := w.MousePosition()
-			mousePreviousPosition := w.MousePreviousPosition()
-			mouseScroll := w.MouseScroll()
+			leftClickHeld := u.Window.Pressed(pixelgl.MouseButtonLeft)
+			mousePosition := u.Window.MousePosition()
+			mousePreviousPosition := u.Window.MousePreviousPosition()
+			mouseScroll := u.Window.MouseScroll()
 
 			previousArea := cameraCollider.Area
 			previousScale := cameraCollider.Scale
@@ -51,7 +74,7 @@ func (u *PlayerUpdater) Update(w *pixelgl.Window, dt float64) {
 					cameraComponent.Grow(mouseScroll.Y)
 					cameraComponent.Update(mousePosition)
 
-					w.SetMatrix(cameraComponent.Matrix)
+					u.Window.SetMatrix(cameraComponent.Matrix)
 
 					if UICanvas, ok := ecs.Get[components.CanvasComponent](u.UI); ok {
 						UICanvas.InverseTransform(cameraComponent.Unproject(mousePosition), cameraComponent.DeltaPos, cameraComponent.DeltaScale, cameraComponent.Scale)
