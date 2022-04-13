@@ -30,20 +30,17 @@ func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 }
 
 func (m *DrawerManager) Enqueue(level queue.PriorityLevel, isPersistent bool, drawers ...Drawer) error {
+	var err error
 	m.drawerQueue.SafeWrite(func(queue *queue.PriorityQueue[DrawerWrapper]) {
 		queue.SetEnqueueLevel(level)
-	})
-	for _, drawer := range drawers {
-		err := m.drawerQueue.Enqueue(DrawerWrapper{isPersistent, drawer})
-		if err != nil {
-			return err
+		for _, drawer := range drawers {
+			err = queue.Enqueue(DrawerWrapper{isPersistent, drawer})
 		}
-	}
-
-	return nil
+	})
+	return err
 }
 
-func (m *DrawerManager) Execute() (handlerErr error) {
+func (m *DrawerManager) Execute() error {
 	return m.drawerHandler.Consume(m.drawerQueue)
 }
 

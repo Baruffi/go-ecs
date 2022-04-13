@@ -15,13 +15,14 @@ func (f UpdaterFunc) Update(dt float64) {
 }
 
 type AnyComponentPool interface {
-	HasEntity(entityId int) bool
-	RemoveEntity(entityId int)
+	HasEntity(entityId EntityIndex) bool
+	RemoveEntity(entityId EntityIndex)
 }
 
 type Scene struct {
 	Updater
-	entityCounter        int
+	destroyed            EntityId
+	entities             []EntityId
 	componentPoolCounter int
 	componentPoolMap     map[reflect.Type]int
 	componentPools       []AnyComponentPool
@@ -30,6 +31,8 @@ type Scene struct {
 func NewScene(updater Updater) *Scene {
 	return &Scene{
 		Updater:          updater,
+		destroyed:        CreateEntityId(INVALID_ENTITY, 0),
+		entities:         make([]EntityId, 0),
 		componentPoolMap: make(map[reflect.Type]int),
 		componentPools:   make([]AnyComponentPool, 0),
 	}
@@ -48,33 +51,52 @@ func (scene *Scene) getPoolId(component any) (id int) {
 }
 
 func (scene *Scene) CreateEntity() Entity {
-	id := scene.entityCounter
-	scene.entityCounter++
-	return Entity{
-		id:    id,
-		scene: scene,
-	}
-}
-
-func (scene *Scene) RemoveEntity(entityId int) {
-	for _, pool := range scene.componentPools {
-		if pool.HasEntity(entityId) {
-			pool.RemoveEntity(entityId)
+	if IsEntityValid(scene.destroyed) {
+		destroyed := scene.destroyed
+		if IsEntityValid(scene.entities[GetEntityIndex(destroyed)]) {
+			scene.destroyed = scene.entities[GetEntityIndex(destroyed)]
+		} else {
+			scene.destroyed = CreateEntityId(INVALID_ENTITY, 0)
+		}
+		scene.entities[destroyed] = destroyed
+		return Entity{
+			id:    scene.entities[destroyed],
+			scene: scene,
+		}
+	} else {
+		id := CreateEntityId(EntityIndex(len(scene.entities)), 0)
+		scene.entities = append(scene.entities, id)
+		return Entity{
+			id:    id,
+			scene: scene,
 		}
 	}
 }
 
-func HasComponent[T any](scene *Scene, entityId int) bool {
+func (scene *Scene) RemoveEntity(entityId EntityId) {
+	if IsEntityValid(entityId) && IsEntityValid(scene.entities[GetEntityIndex(entityId)]) {
+		entityVersion := GetEntityVersion(scene.entities[GetEntityIndex(entityId)])
+		scene.entities[GetEntityIndex(entityId)] = scene.destroyed
+		scene.destroyed = CreateEntityId(GetEntityIndex(entityId), entityVersion+1)
+		for _, pool := range scene.componentPools {
+			if pool.HasEntity(GetEntityIndex(entityId)) {
+				pool.RemoveEntity(GetEntityIndex(entityId))
+			}
+		}
+	}
+}
+
+func HasComponent[T any](scene *Scene, entityId EntityId) bool {
 	var base T
 	poolId := scene.getPoolId(base)
 	if poolId < len(scene.componentPools) {
 		pool := scene.componentPools[poolId]
-		return pool.HasEntity(entityId)
+		return pool.HasEntity(GetEntityIndex(entityId))
 	}
 	return false
 }
 
-func Assign[T any](scene *Scene, entityId int, component T) T {
+func Assign[T any](scene *Scene, entityId EntityId, component T) T {
 	poolId := scene.getPoolId(component)
 	if len(scene.componentPools) <= poolId {
 		reflectType := reflect.TypeOf(component)
@@ -83,22 +105,22 @@ func Assign[T any](scene *Scene, entityId int, component T) T {
 		scene.componentPoolCounter++
 	}
 	pool := scene.componentPools[poolId].(*ComponentPool[T])
-	pool.entityIds = append(pool.entityIds, entityId)
+	pool.entityIds = append(pool.entityIds, GetEntityIndex(entityId))
 	pool.components = append(pool.components, component)
-	for len(pool.componentIds) <= entityId {
-		pool.componentIds = append(pool.componentIds, -1)
+	for len(pool.componentIds) <= int(GetEntityIndex(entityId)) {
+		pool.componentIds = append(pool.componentIds, INVALID_COMPONENT)
 	}
-	pool.componentIds[entityId] = len(pool.components) - 1
+	pool.componentIds[GetEntityIndex(entityId)] = ComponentIndex(len(pool.components) - 1)
 	return component
 }
 
-func GetComponent[T any](scene *Scene, entityId int) (component T, ok bool) {
+func GetComponent[T any](scene *Scene, entityId EntityId) (component T, ok bool) {
 	poolId := scene.getPoolId(component)
 	if poolId < len(scene.componentPools) {
 		pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
 		if ok {
-			componentId := pool.componentIds[entityId]
-			if componentId != -1 {
+			componentId := pool.componentIds[GetEntityIndex(entityId)]
+			if componentId != INVALID_COMPONENT {
 				component = pool.components[componentId]
 				return component, true
 			}

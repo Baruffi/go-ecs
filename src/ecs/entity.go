@@ -1,7 +1,33 @@
 package ecs
 
+import "math"
+
+type EntityIndex uint32
+type EntityVersion uint32
+type EntityId uint64
+
+const (
+	INVALID_ENTITY EntityIndex = EntityIndex(math.MaxUint32)
+)
+
+func CreateEntityId(index EntityIndex, version EntityVersion) EntityId {
+	return EntityId(index)<<32 | EntityId(version)
+}
+
+func GetEntityIndex(id EntityId) EntityIndex {
+	return EntityIndex(id >> 32)
+}
+
+func GetEntityVersion(id EntityId) EntityVersion {
+	return EntityVersion(id)
+}
+
+func IsEntityValid(id EntityId) bool {
+	return EntityIndex(id>>32) != INVALID_ENTITY
+}
+
 type Entity struct {
-	id    int
+	id    EntityId
 	scene *Scene
 }
 
