@@ -87,8 +87,8 @@ func (scene *Scene) RemoveEntity(entityId EntityId) {
 }
 
 func HasComponent[T any](scene *Scene, entityId EntityId) bool {
-	var base T
-	poolId := scene.getPoolId(base)
+	var example T
+	poolId := scene.getPoolId(example)
 	if poolId < len(scene.componentPools) {
 		pool := scene.componentPools[poolId]
 		return pool.HasEntity(GetEntityIndex(entityId))
@@ -96,7 +96,8 @@ func HasComponent[T any](scene *Scene, entityId EntityId) bool {
 	return false
 }
 
-func Assign[T any](scene *Scene, entityId EntityId, component T) T {
+func Assign[T any](scene *Scene, entityId EntityId) T {
+	var component T
 	poolId := scene.getPoolId(component)
 	if len(scene.componentPools) <= poolId {
 		reflectType := reflect.TypeOf(component)
@@ -130,8 +131,8 @@ func GetComponent[T any](scene *Scene, entityId EntityId) (component T, ok bool)
 }
 
 func View[T any](scene *Scene) (components []T, ok bool) {
-	var base T
-	poolId := scene.getPoolId(base)
+	var example T
+	poolId := scene.getPoolId(example)
 	pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
 	if ok {
 		components = pool.components
