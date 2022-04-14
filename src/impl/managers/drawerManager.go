@@ -17,13 +17,13 @@ type DrawerWrapper struct {
 }
 
 type DrawerManager struct {
-	drawerQueue   *queue.ThreadSafeQueue[DrawerWrapper, *queue.PriorityQueue[DrawerWrapper]]
+	drawerQueue   *queue.PriorityQueue[DrawerWrapper]
 	drawerHandler *queue.GenericQueueHandler[DrawerWrapper]
 }
 
 func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 	return &DrawerManager{
-		drawerQueue: queue.NewThreadSafeQueue[DrawerWrapper](queue.NewPriorityQueue[DrawerWrapper]()),
+		drawerQueue: queue.NewPriorityQueue[DrawerWrapper](),
 		drawerHandler: queue.NewGenericQueueHandler[DrawerWrapper](&drawerHandler{
 			window: window,
 		}),
@@ -32,12 +32,10 @@ func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 
 func (m *DrawerManager) Enqueue(level queue.PriorityLevel, owner ecs.Entity, drawers ...Drawer) error {
 	var err error
-	m.drawerQueue.SafeWrite(func(queue *queue.PriorityQueue[DrawerWrapper]) {
-		queue.SetEnqueueLevel(level)
-		for _, drawer := range drawers {
-			err = queue.Enqueue(DrawerWrapper{owner, drawer})
-		}
-	})
+	m.drawerQueue.SetEnqueueLevel(level)
+	for _, drawer := range drawers {
+		err = m.drawerQueue.Enqueue(DrawerWrapper{owner, drawer})
+	}
 	return err
 }
 

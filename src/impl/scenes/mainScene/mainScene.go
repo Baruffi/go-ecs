@@ -46,7 +46,7 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.Ev
 	clockTime := components.TimeComponent{}
 	clockTime.Init("UTC", "Mon, 02 Jan 2006 15:04:05 MST")
 	clockText := components.TextComponent{}
-	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black, 1)
+	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.White, 1)
 	clock.T1 = clockTime
 	clock.T2 = clockText
 
@@ -63,9 +63,9 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.Ev
 	worldMap.T2 = worldMapCollider
 
 	// Map every component that will be always drawn
-	drawerManager.Enqueue(queue.TWO, UI, UICanvas)
-	drawerManager.Enqueue(queue.SEVEN, player, worldMap.GetSecond(), camera.GetSecond())
-	drawerManager.Enqueue(queue.NINE, world, worldMap.GetFirst())
+	drawerManager.Enqueue(queue.SEVEN, UI, UICanvas)
+	drawerManager.Enqueue(queue.TWO, player, worldMap.GetSecond(), camera.GetSecond())
+	drawerManager.Enqueue(queue.ZERO, world, worldMap.GetFirst())
 
 	// Map the necessary entities onto the updater
 	u := s.Updater.(MainUpdater)

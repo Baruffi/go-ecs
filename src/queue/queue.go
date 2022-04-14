@@ -1,6 +1,7 @@
 package queue
 
 type Queue[T any] interface {
+	Reset()
 	Enqueue(T) error
 	Dequeue() (T, error)
 	Peek() (T, error)

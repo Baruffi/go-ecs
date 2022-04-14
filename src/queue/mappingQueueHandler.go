@@ -23,6 +23,7 @@ func (h *MappingQueueHandler[M, H]) UnsetMapping(mapping M) {
 }
 
 func (h *MappingQueueHandler[M, H]) Consume(q Queue[M]) error {
+	q.Reset()
 	len := q.GetLen()
 	for i := 0; i < len; i++ {
 		if mapping, err := q.Peek(); err == nil {
