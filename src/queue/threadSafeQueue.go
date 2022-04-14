@@ -29,6 +29,13 @@ func (q *ThreadSafeQueue[T, Q]) SafeWrite(write func(queue Q)) {
 	write(q.unsafeQueue)
 }
 
+func (q *ThreadSafeQueue[T, Q]) Reset() {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+
+	q.unsafeQueue.Reset()
+}
+
 func (q *ThreadSafeQueue[T, Q]) Enqueue(item T) error {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()

@@ -11,6 +11,7 @@ func NewGenericQueueHandler[Q any](handler Handler[Q]) *GenericQueueHandler[Q] {
 }
 
 func (h *GenericQueueHandler[Q]) Consume(q Queue[Q]) error {
+	q.Reset()
 	len := q.GetLen()
 	for i := 0; i < len; i++ {
 		if item, err := q.Peek(); err == nil {

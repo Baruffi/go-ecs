@@ -13,6 +13,10 @@ func NewBasicQueue[T any]() *BasicQueue[T] {
 	}
 }
 
+func (q *BasicQueue[T]) Reset() {
+	q.head = 0
+}
+
 func (q *BasicQueue[T]) Enqueue(item T) error {
 	q.items = append(q.items, item)
 

@@ -53,7 +53,7 @@ func (u *MainUpdater) DestroyCountries() {
 
 func (u MainUpdater) Update(dt float64) {
 	pendingCountryCounter++
-	if pendingCountryCounter == 100 {
+	if pendingCountryCounter == 1000 {
 		u.GenerateCountries()
 	}
 	if len(countries) > 10 {
