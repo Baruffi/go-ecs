@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"example.com/v0/src/ecs"
-	"example.com/v0/src/impl/managers"
 	"example.com/v0/src/impl/scenes/mainScene"
+	"example.com/v0/src/impl/systems"
 	"example.com/v0/src/impl/tools"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -31,25 +31,24 @@ func setupWindow() *pixelgl.Window {
 	return win
 }
 
-func setupManagers(win *pixelgl.Window) (*managers.EventManager, *managers.DrawerManager) {
-	eventManager := managers.NewEventManager(10, 10, 5*time.Second)
-	drawerManager := managers.NewDrawerManager(win)
+func setupSystems(win *pixelgl.Window) (*systems.EventSystem, *systems.DrawSystem) {
+	eventSystem := systems.NewEventSystem(10, 10, 5*time.Second)
+	drawSystem := systems.NewDrawSystem(win)
 
-	return eventManager, drawerManager
+	return eventSystem, drawSystem
 }
 
-func setupStage(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) ecs.Stage {
-	mainScene := mainScene.NewScene(win, eventManager, drawerManager)
+func setupStage(win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) *ecs.Stage {
 	scenes := map[string]*ecs.Scene{
-		MainSceneId: mainScene,
+		MainSceneId: mainScene.NewScene(win, eventSystem, drawSystem),
 	}
 	stage := ecs.NewStage(MainSceneId, scenes)
 
 	return stage
 }
 
-func setupClock() tools.Clock {
-	clock := tools.Clock{}
+func setupClock() *tools.Clock {
+	clock := &tools.Clock{}
 	clock.Init(-1)
 
 	return clock
@@ -57,8 +56,8 @@ func setupClock() tools.Clock {
 
 func Run() {
 	win := setupWindow()
-	eventManager, drawerManager := setupManagers(win)
-	stage := setupStage(win, eventManager, drawerManager)
+	eventSystem, drawSystem := setupSystems(win)
+	stage := setupStage(win, eventSystem, drawSystem)
 	clock := setupClock()
 
 	var (
@@ -71,11 +70,11 @@ func Run() {
 		scene := stage.GetScene()
 		scene.Update(dt)
 
-		eventManager.Execute()
+		eventSystem.Execute()
 
 		win.Clear(colornames.Black)
 
-		drawerManager.Execute()
+		drawSystem.Execute()
 
 		win.Update()
 

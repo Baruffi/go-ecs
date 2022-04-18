@@ -2,17 +2,17 @@ package countryFactory
 
 import (
 	"example.com/v0/src/ecs"
-	"example.com/v0/src/impl/managers"
+	"example.com/v0/src/impl/systems"
 	"github.com/faiface/pixel"
 )
 
-func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) ecs.EntityFactory[CountryPrefab] {
+func NewFactory(s *ecs.Scene, frame int, position pixel.Vec, orig pixel.Vec, timeLoc string, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) ecs.EntityFactory[CountryPrefab] {
 	prefab := CountryPrefab{
-		frame:         frame,
-		position:      position,
-		orig:          orig,
-		timeLoc:       timeLoc,
-		drawerManager: drawerManager,
+		frame:      frame,
+		position:   position,
+		orig:       orig,
+		timeLoc:    timeLoc,
+		drawSystem: drawSystem,
 	}
 	return ecs.NewEntityFactory(s, prefab)
 }

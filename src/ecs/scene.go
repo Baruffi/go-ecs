@@ -14,7 +14,7 @@ func (f UpdaterFunc) Update(dt float64) {
 	f(dt)
 }
 
-type AnyComponentPool interface {
+type anyComponentPool interface {
 	HasEntity(entityId EntityIndex) bool
 	RemoveEntity(entityId EntityIndex)
 }
@@ -25,7 +25,7 @@ type Scene struct {
 	entities             []EntityId
 	componentPoolCounter int
 	componentPoolMap     map[reflect.Type]int
-	componentPools       []AnyComponentPool
+	componentPools       []anyComponentPool
 }
 
 func NewScene[U Updater]() *Scene {
@@ -35,11 +35,11 @@ func NewScene[U Updater]() *Scene {
 		destroyed:        CreateEntityId(INVALID_ENTITY, 0),
 		entities:         make([]EntityId, 0),
 		componentPoolMap: make(map[reflect.Type]int),
-		componentPools:   make([]AnyComponentPool, 0),
+		componentPools:   make([]anyComponentPool, 0),
 	}
 }
 
-func (scene *Scene) getPoolId(component any) (id int) {
+func (scene *Scene) getPoolId(component any) int {
 	reflectType := reflect.TypeOf(component)
 	if reflectType == nil {
 		panic("a nil interface is not a valid component type")
@@ -52,7 +52,7 @@ func (scene *Scene) getPoolId(component any) (id int) {
 }
 
 func (scene *Scene) HasEntity(entityId EntityId) bool {
-	if IsEntityValid(entityId) && IsEntityValid(scene.entities[GetEntityIndex(entityId)]) && entityId == scene.entities[GetEntityIndex(entityId)] {
+	if IsEntityValid(entityId) && GetEntityIndex(entityId) < EntityIndex(len(scene.entities)) && IsEntityValid(scene.entities[GetEntityIndex(entityId)]) && entityId == scene.entities[GetEntityIndex(entityId)] {
 		return true
 	}
 	return false
@@ -121,20 +121,7 @@ func Assign[T any](scene *Scene, entityId EntityId) *T {
 	}
 	pool := scene.componentPools[poolId].(*ComponentPool[T])
 	entityIndex := GetEntityIndex(entityId)
-	entityPage := entityIndex / PAGE_SIZE
-	pool.entityIndexes = append(pool.entityIndexes, entityIndex)
-	pool.components = append(pool.components, &component)
-	for len(pool.pages) <= int(entityPage) {
-		pool.pages = append(pool.pages, nil)
-	}
-	if pool.pages[entityPage] == nil {
-		newPage := make([]ComponentIndex, PAGE_SIZE)
-		for i := range newPage {
-			newPage[i] = INVALID_COMPONENT
-		}
-		pool.pages[entityPage] = newPage
-	}
-	pool.pages[entityPage][entityIndex%PAGE_SIZE] = ComponentIndex(len(pool.components) - 1)
+	pool.Assign(entityIndex, &component)
 	return &component
 }
 
@@ -147,22 +134,11 @@ func GetComponent[T any](scene *Scene, entityId EntityId) (*T, bool) {
 			if ok {
 				entityIndex := GetEntityIndex(entityId)
 				if pool.HasEntity(entityIndex) {
-					component := pool.components[pool.pages[entityIndex/PAGE_SIZE][entityIndex%PAGE_SIZE]]
+					component := pool.GetComponent(entityIndex)
 					return component, true
 				}
 			}
 		}
 	}
 	return nil, false
-}
-
-func View[T any](scene *Scene) (components []*T, ok bool) {
-	var example *T
-	poolId := scene.getPoolId(example)
-	pool, ok := scene.componentPools[poolId].(*ComponentPool[T])
-	if ok {
-		components = pool.components
-	}
-
-	return components, ok
 }

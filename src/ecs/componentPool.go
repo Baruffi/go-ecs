@@ -24,6 +24,27 @@ func NewComponentPool[T any]() *ComponentPool[T] {
 	}
 }
 
+func (pool *ComponentPool[T]) Assign(entityIndex EntityIndex, component *T) {
+	entityPage := entityIndex / PAGE_SIZE
+	pool.entityIndexes = append(pool.entityIndexes, entityIndex)
+	pool.components = append(pool.components, component)
+	for len(pool.pages) <= int(entityPage) {
+		pool.pages = append(pool.pages, nil)
+	}
+	if pool.pages[entityPage] == nil {
+		newPage := make([]ComponentIndex, PAGE_SIZE)
+		for i := range newPage {
+			newPage[i] = INVALID_COMPONENT
+		}
+		pool.pages[entityPage] = newPage
+	}
+	pool.pages[entityPage][entityIndex%PAGE_SIZE] = ComponentIndex(len(pool.components) - 1)
+}
+
+func (pool *ComponentPool[T]) GetComponent(entityIndex EntityIndex) *T {
+	return pool.components[pool.pages[entityIndex/PAGE_SIZE][entityIndex%PAGE_SIZE]]
+}
+
 func (pool *ComponentPool[T]) HasEntity(entityIndex EntityIndex) bool {
 	return len(pool.pages) > int(entityIndex/PAGE_SIZE) && pool.pages[entityIndex/PAGE_SIZE] != nil && pool.pages[entityIndex/PAGE_SIZE][entityIndex%PAGE_SIZE] != INVALID_COMPONENT
 }

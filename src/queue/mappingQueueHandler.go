@@ -29,7 +29,6 @@ func (h *MappingQueueHandler[M, H]) Consume(q Queue[M]) error {
 		if mapping, err := q.Peek(); err == nil {
 			if handled, ok := h.mappings[mapping]; ok {
 				result := h.handler.Handle(handled)
-
 				if result == DONE {
 					q.Dequeue()
 				} else {
@@ -42,6 +41,5 @@ func (h *MappingQueueHandler[M, H]) Consume(q Queue[M]) error {
 			return err
 		}
 	}
-
 	return nil
 }

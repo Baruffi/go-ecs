@@ -7,7 +7,7 @@ import (
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/factories/countryFactory"
-	"example.com/v0/src/impl/managers"
+	"example.com/v0/src/impl/systems"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )
@@ -18,13 +18,13 @@ var countries []ecs.Entity
 var countryFactoryHolder ecs.EntityFactory[countryFactory.CountryPrefab]
 
 type MainUpdater struct {
-	Player ecs.Entity
-	World  ecs.Entity
-	UI     ecs.Entity
+	player ecs.Entity
+	world  ecs.Entity
+	ui     ecs.Entity
 
-	window        *pixelgl.Window
-	eventManager  *managers.EventManager
-	drawerManager *managers.DrawerManager
+	window      *pixelgl.Window
+	eventSystem *systems.EventSystem
+	drawSystem  *systems.DrawSystem
 }
 
 func (u *MainUpdater) GenerateCountries() {
@@ -59,7 +59,8 @@ func (u MainUpdater) Update(dt float64) {
 	if len(countries) > 10 {
 		u.DestroyCountries()
 	}
-	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.UI); ok {
+
+	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.ui); ok {
 		timeComponent := clock.GetFirst()
 		textComponent := clock.GetSecond()
 		select {
@@ -68,14 +69,14 @@ func (u MainUpdater) Update(dt float64) {
 			timeComponent.UpdateTime()
 			timeStr := fmt.Sprintf("TIME: %s", timeComponent.String())
 			textComponent.Write(timeStr)
-			if UICanvas, ok := ecs.Get[components.CanvasComponent](u.UI); ok {
+			if UICanvas, ok := ecs.Get[components.CanvasComponent](u.ui); ok {
 				UICanvas.Clear()
 				textComponent.Draw(UICanvas.Canvas)
 			}
 		default:
 		}
 	}
-	if camera, ok := ecs.Get[components.Combiner[components.CameraComponent, components.ColliderComponent]](u.Player); ok {
+	if camera, ok := ecs.Get[components.Combiner[components.CameraComponent, components.ColliderComponent]](u.player); ok {
 		cameraComponent := camera.GetFirst()
 		cameraCollider := camera.GetSecond()
 		if cameraComponent.Active {
@@ -98,7 +99,7 @@ func (u MainUpdater) Update(dt float64) {
 			cameraCollider.Grow(-mouseScroll.Y)
 			cameraCollider.Update(cameraComponent.Unproject(mousePosition))
 
-			if worldMap, ok := ecs.Get[components.Combiner[components.DrawComponent, components.ColliderComponent]](u.World); ok {
+			if worldMap, ok := ecs.Get[components.Combiner[components.DrawComponent, components.ColliderComponent]](u.world); ok {
 				worldMapCollider := worldMap.GetSecond()
 
 				if worldMapCollider.CollidesVec(cameraCollider.Area.Min) && worldMapCollider.CollidesVec(cameraCollider.Area.Max) {
@@ -113,7 +114,7 @@ func (u MainUpdater) Update(dt float64) {
 
 					u.window.SetMatrix(cameraComponent.Matrix)
 
-					if UICanvas, ok := ecs.Get[components.CanvasComponent](u.UI); ok {
+					if UICanvas, ok := ecs.Get[components.CanvasComponent](u.ui); ok {
 						UICanvas.InverseTransform(cameraComponent.Unproject(mousePosition), cameraComponent.DeltaPos, cameraComponent.DeltaScale, cameraComponent.Scale)
 					}
 				} else {
@@ -129,7 +130,7 @@ func (u MainUpdater) Update(dt float64) {
 						textComponent.Clear()
 						if hoverComponent.CollidesVec(cameraComponent.Unproject(mousePosition)) {
 							if timeTag, ok := ecs.Get[components.TagComponent](country); ok {
-								if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.UI); ok {
+								if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.ui); ok {
 									timeComponent := clock.GetFirst()
 									timeComponent.UpdateLocation(timeTag.Tag)
 								}

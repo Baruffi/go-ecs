@@ -6,7 +6,7 @@ import (
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/factories/countryFactory"
-	"example.com/v0/src/impl/managers"
+	"example.com/v0/src/impl/systems"
 	"example.com/v0/src/impl/tools"
 	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
@@ -16,14 +16,14 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
-func NewScene(win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) *ecs.Scene {
+func NewScene(win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) *ecs.Scene {
 	mainScene := ecs.NewScene[MainUpdater]()
-	configureScene(mainScene, win, eventManager, drawerManager)
+	configureScene(mainScene, win, eventSystem, drawSystem)
 
 	return mainScene
 }
 
-func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.EventManager, drawerManager *managers.DrawerManager) {
+func configureScene(s *ecs.Scene, win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) {
 	UI := s.CreateEntity()
 	UICanvas := ecs.Add[components.CanvasComponent](UI)
 	clock := ecs.Add[components.Combiner[components.TimeComponent, components.TextComponent]](UI)
@@ -46,7 +46,7 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.Ev
 	clockTime := components.TimeComponent{}
 	clockTime.Init("UTC", "Mon, 02 Jan 2006 15:04:05 MST")
 	clockText := components.TextComponent{}
-	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.White, 1)
+	clockText.Init(pixel.V(10, 10), text.NewAtlas(basicfont.Face7x13, text.ASCII), colornames.Black, 1)
 	clock.T1 = clockTime
 	clock.T2 = clockText
 
@@ -63,24 +63,24 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventManager *managers.Ev
 	worldMap.T2 = worldMapCollider
 
 	// Map every component that will be always drawn
-	drawerManager.Enqueue(queue.SEVEN, UI, UICanvas)
-	drawerManager.Enqueue(queue.TWO, player, worldMap.GetSecond(), camera.GetSecond())
-	drawerManager.Enqueue(queue.ZERO, world, worldMap.GetFirst())
+	drawSystem.Enqueue(queue.SEVEN, UI, UICanvas)
+	drawSystem.Enqueue(queue.TWO, player, worldMap.GetSecond(), camera.GetSecond())
+	drawSystem.Enqueue(queue.ZERO, world, worldMap.GetFirst())
 
 	// Map the necessary entities onto the updater
 	u := s.Updater.(MainUpdater)
 
-	u.UI = UI
-	u.World = world
-	u.Player = player
+	u.ui = UI
+	u.world = world
+	u.player = player
 
 	u.window = win
-	u.eventManager = eventManager
-	u.drawerManager = drawerManager
+	u.eventSystem = eventSystem
+	u.drawSystem = drawSystem
 
 	s.Updater = u
 
 	// Factory stuff. Temporary
 	countries = make([]ecs.Entity, 0)
-	countryFactoryHolder = countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventManager, drawerManager)
+	countryFactoryHolder = countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventSystem, drawSystem)
 }
