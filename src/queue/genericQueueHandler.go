@@ -16,7 +16,6 @@ func (h *GenericQueueHandler[Q]) Consume(q Queue[Q]) error {
 	for i := 0; i < len; i++ {
 		if item, err := q.Peek(); err == nil {
 			result := h.handler.Handle(item)
-
 			if result == DONE {
 				q.Dequeue()
 			} else {
@@ -26,6 +25,5 @@ func (h *GenericQueueHandler[Q]) Consume(q Queue[Q]) error {
 			return err
 		}
 	}
-
 	return nil
 }

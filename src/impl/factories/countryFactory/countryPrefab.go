@@ -5,7 +5,7 @@ import (
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
-	"example.com/v0/src/impl/managers"
+	"example.com/v0/src/impl/systems"
 	"example.com/v0/src/impl/tools"
 	"example.com/v0/src/queue"
 	"github.com/faiface/pixel"
@@ -15,11 +15,11 @@ import (
 )
 
 type CountryPrefab struct {
-	frame         int
-	position      pixel.Vec
-	orig          pixel.Vec
-	timeLoc       string
-	drawerManager *managers.DrawerManager
+	frame      int
+	position   pixel.Vec
+	orig       pixel.Vec
+	timeLoc    string
+	drawSystem *systems.DrawSystem
 }
 
 func (p *CountryPrefab) Update(frame int, position pixel.Vec, orig pixel.Vec, timeLoc string) {
@@ -53,7 +53,7 @@ func (p CountryPrefab) Configure(countryEntity ecs.Entity) {
 	area := pixel.R(p.position.X-frameScaleStep, p.position.Y-frameScaleStep, p.position.X+frameScaleStep, p.position.Y+frameScaleStep)
 	hoverComponent.Init(area, p.position, 1.0, 0.0, 1.0)
 
-	p.drawerManager.Enqueue(queue.FOUR, countryEntity, drawComponent)
-	p.drawerManager.Enqueue(queue.FIVE, countryEntity, textComponent)
-	p.drawerManager.Enqueue(queue.TWO, countryEntity, hoverComponent)
+	p.drawSystem.Enqueue(queue.FOUR, countryEntity, drawComponent)
+	p.drawSystem.Enqueue(queue.FIVE, countryEntity, textComponent)
+	p.drawSystem.Enqueue(queue.TWO, countryEntity, hoverComponent)
 }

@@ -1,4 +1,4 @@
-package managers
+package systems
 
 import (
 	"example.com/v0/src/ecs"
@@ -16,13 +16,13 @@ type DrawerWrapper struct {
 	drawer Drawer
 }
 
-type DrawerManager struct {
+type DrawSystem struct {
 	drawerQueue   *queue.PriorityQueue[DrawerWrapper]
 	drawerHandler *queue.GenericQueueHandler[DrawerWrapper]
 }
 
-func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
-	return &DrawerManager{
+func NewDrawSystem(window *pixelgl.Window) *DrawSystem {
+	return &DrawSystem{
 		drawerQueue: queue.NewPriorityQueue[DrawerWrapper](),
 		drawerHandler: queue.NewGenericQueueHandler[DrawerWrapper](&drawerHandler{
 			window: window,
@@ -30,7 +30,7 @@ func NewDrawerManager(window *pixelgl.Window) *DrawerManager {
 	}
 }
 
-func (m *DrawerManager) Enqueue(level queue.PriorityLevel, owner ecs.Entity, drawers ...Drawer) error {
+func (m *DrawSystem) Enqueue(level queue.PriorityLevel, owner ecs.Entity, drawers ...Drawer) error {
 	var err error
 	m.drawerQueue.SetEnqueueLevel(level)
 	for _, drawer := range drawers {
@@ -39,7 +39,7 @@ func (m *DrawerManager) Enqueue(level queue.PriorityLevel, owner ecs.Entity, dra
 	return err
 }
 
-func (m *DrawerManager) Execute() error {
+func (m *DrawSystem) Execute() error {
 	return m.drawerHandler.Consume(m.drawerQueue)
 }
 

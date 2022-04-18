@@ -5,8 +5,8 @@ type Stage struct {
 	scenes       map[string]*Scene
 }
 
-func NewStage(startScene string, scenes map[string]*Scene) Stage {
-	return Stage{
+func NewStage(startScene string, scenes map[string]*Scene) *Stage {
+	return &Stage{
 		currentScene: startScene,
 		scenes:       scenes,
 	}

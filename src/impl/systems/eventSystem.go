@@ -1,4 +1,4 @@
-package managers
+package systems
 
 import (
 	"sync/atomic"
@@ -10,7 +10,7 @@ import (
 type EventCall int
 type Event func()
 
-type EventManager struct {
+type EventSystem struct {
 	count        *int64
 	callQueue    *queue.ThreadSafeQueue[EventCall, *queue.BasicQueue[EventCall]]
 	eventQueue   *queue.ThreadSafeQueue[Event, *queue.BasicQueue[Event]]
@@ -18,7 +18,7 @@ type EventManager struct {
 	eventHandler *queue.GenericQueueHandler[Event]
 }
 
-func NewEventManager(maxAllowed int64, limit int, unlimitRate time.Duration) *EventManager {
+func NewEventSystem(maxAllowed int64, limit int, unlimitRate time.Duration) *EventSystem {
 	var count int64
 	schedule := make(chan time.Time, limit)
 	for i := 0; i < limit; i++ {
@@ -34,7 +34,7 @@ func NewEventManager(maxAllowed int64, limit int, unlimitRate time.Duration) *Ev
 		maxAllowed: maxAllowed,
 		schedule:   schedule,
 	}
-	return &EventManager{
+	return &EventSystem{
 		count:        &count,
 		callQueue:    queue.NewThreadSafeQueue[EventCall](queue.NewBasicQueue[EventCall]()),
 		eventQueue:   queue.NewThreadSafeQueue[Event](queue.NewBasicQueue[Event]()),
@@ -43,30 +43,30 @@ func NewEventManager(maxAllowed int64, limit int, unlimitRate time.Duration) *Ev
 	}
 }
 
-func (m *EventManager) SetMapping(call EventCall, event Event) {
+func (m *EventSystem) SetMapping(call EventCall, event Event) {
 	m.callHandler.SetMapping(call, event)
 }
 
-func (m *EventManager) EnqueueCall(c EventCall) error {
+func (m *EventSystem) EnqueueCall(c EventCall) error {
 	return m.callQueue.Enqueue(c)
 }
 
-func (m *EventManager) EnqueueEvent(e Event) error {
+func (m *EventSystem) EnqueueEvent(e Event) error {
 	return m.eventQueue.Enqueue(e)
 }
 
-func (m *EventManager) Execute() (callHandlerErr error, eventHandlerErr error) {
+func (m *EventSystem) Execute() (callHandlerErr error, eventHandlerErr error) {
 	callHandlerErr = m.callHandler.Consume(m.callQueue)
 	eventHandlerErr = m.eventHandler.Consume(m.eventQueue)
 
 	return callHandlerErr, eventHandlerErr
 }
 
-func (m *EventManager) Executing() bool {
+func (m *EventSystem) Executing() bool {
 	return atomic.LoadInt64(m.count) > 0
 }
 
-func (m *EventManager) GetTaskCount() int64 {
+func (m *EventSystem) GetTaskCount() int64 {
 	return atomic.LoadInt64(m.count)
 }
 

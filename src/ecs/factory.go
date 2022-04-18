@@ -1,13 +1,23 @@
 package ecs
 
-type Type interface{}
-
-type Factory[T Type] interface {
+type Factory[T any] interface {
 	Generate() T
 }
 
-type Prefab[T Type] interface {
+type FactoryFunc[T any] func() T
+
+func (f FactoryFunc[T]) Generate() T {
+	return f()
+}
+
+type Prefab[T any] interface {
 	Configure(T)
+}
+
+type PrefabFunc[T any] func(T)
+
+func (f PrefabFunc[T]) Configure(value T) {
+	f(value)
 }
 
 type EntityFactory[P Prefab[Entity]] struct {
