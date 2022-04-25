@@ -2,29 +2,39 @@ package mainScene
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
 	"example.com/v0/src/impl/factories/countryFactory"
-	"example.com/v0/src/impl/systems"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )
 
-// Temporary
-var pendingCountryCounter int
-var countries []ecs.Entity
-var countryFactoryHolder ecs.EntityFactory[countryFactory.CountryPrefab]
-
 type MainUpdater struct {
-	player ecs.Entity
-	world  ecs.Entity
-	ui     ecs.Entity
+	pendingCountryCounter int
+	countryFactoryHolder  ecs.EntityFactory[countryFactory.CountryPrefab]
+	window                *pixelgl.Window
 
-	window      *pixelgl.Window
-	eventSystem *systems.EventSystem
-	drawSystem  *systems.DrawSystem
+	player    ecs.Entity
+	world     ecs.Entity
+	ui        ecs.Entity
+	countries []ecs.Entity
+}
+
+func NewUpdater(countryFactoryHolder ecs.EntityFactory[countryFactory.CountryPrefab], window *pixelgl.Window, player ecs.Entity, world ecs.Entity, ui ecs.Entity) *MainUpdater {
+	updater := &MainUpdater{
+		countryFactoryHolder: countryFactoryHolder,
+		window:               window,
+
+		player:    player,
+		world:     world,
+		ui:        ui,
+		countries: make([]ecs.Entity, 0),
+	}
+
+	return updater
 }
 
 func (u *MainUpdater) GenerateCountries() {
@@ -38,26 +48,34 @@ func (u *MainUpdater) GenerateCountries() {
 	randV := func() pixel.Vec {
 		return pixel.V(rand.Float64()*1000, rand.Float64()*1000)
 	}
-	countryFactoryHolder.Prefab.Update(0, randV().Sub(randV()), pixel.ZV.Sub(pixel.V(100, 0)), timeLoc)
-	newCountry := countryFactoryHolder.Generate()
-	countries = append(countries, newCountry)
-	pendingCountryCounter = 0
+	u.countryFactoryHolder.Prefab.Update(0, randV().Sub(randV()), pixel.ZV.Sub(pixel.V(100, 0)), timeLoc)
+	u.countries = append(u.countries, u.countryFactoryHolder.Generate())
 }
 
 func (u *MainUpdater) DestroyCountries() {
-	for _, country := range countries {
+	for _, country := range u.countries {
 		country.Die()
 	}
-	countries = make([]ecs.Entity, 0)
+	u.countries = make([]ecs.Entity, 0)
+	u.pendingCountryCounter = 0
 }
 
-func (u MainUpdater) Update(dt float64) {
-	pendingCountryCounter++
-	if pendingCountryCounter == 1000 {
+func (u *MainUpdater) Update(stage *ecs.Stage, dt float64) {
+	u.pendingCountryCounter++
+	if u.pendingCountryCounter%100 == 0 {
 		u.GenerateCountries()
 	}
-	if len(countries) > 10 {
+	if u.pendingCountryCounter > 1000 {
 		u.DestroyCountries()
+	}
+
+	// Experimental use of view
+	scene := stage.GetScene()
+	tagView := ecs.View(scene, &components.TagComponent{})
+	for tagView.Next() {
+		entity := tagView.GetEntity()
+		tag := tagView.GetComponents()[0].(*components.TagComponent)
+		log.Printf("tag '%s' for entity '%v'\n", tag.Tag, entity)
 	}
 
 	if clock, ok := ecs.Get[components.Combiner[components.TimeComponent, components.TextComponent]](u.ui); ok {
@@ -124,7 +142,7 @@ func (u MainUpdater) Update(dt float64) {
 				}
 			}
 
-			for _, country := range countries {
+			for _, country := range u.countries {
 				if hoverComponent, ok := ecs.Get[components.ColliderComponent](country); ok {
 					if textComponent, ok := ecs.Get[components.TextComponent](country); ok {
 						textComponent.Clear()
