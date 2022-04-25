@@ -31,38 +31,49 @@ type Entity struct {
 	scene *Scene
 }
 
+func (entity *Entity) GetId() EntityId {
+	return entity.id
+}
+
 func (entity *Entity) IsAlive() bool {
-	if entity.scene != nil {
+	if IsEntityValid(entity.id) {
 		return entity.scene.HasEntity(entity.id)
 	}
 	return false
 }
 
 func (entity *Entity) Die() {
-	if entity.scene != nil {
+	if IsEntityValid(entity.id) {
 		entity.scene.RemoveEntity(entity.id)
 		entity.id = CreateEntityId(INVALID_ENTITY, 0)
 		entity.scene = nil
 	}
 }
 
-func Has[T any](entity Entity) bool {
-	if entity.scene != nil {
+func Has[T anyComponent](entity Entity) bool {
+	if IsEntityValid(entity.id) {
 		return HasComponent[T](entity.scene, entity.id)
 	}
 	return false
 }
 
-func Add[T any](entity Entity) *T {
-	if entity.scene != nil {
+func Add[T anyComponent](entity Entity) *T {
+	if IsEntityValid(entity.id) {
 		return Assign[T](entity.scene, entity.id)
 	}
 	panic("cannot assign a component to a dead entity")
 }
 
-func Get[T any](entity Entity) (*T, bool) {
-	if entity.scene != nil {
+func Get[T anyComponent](entity Entity) (*T, bool) {
+	if IsEntityValid(entity.id) {
 		return GetComponent[T](entity.scene, entity.id)
 	}
 	return nil, false
+}
+
+func Remove[T anyComponent](entity Entity) {
+	if IsEntityValid(entity.id) {
+		RemoveComponent[T](entity.scene, entity.id)
+	}
+	panic("cannot remove a component from a dead entity")
 }

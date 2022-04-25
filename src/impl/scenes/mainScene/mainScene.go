@@ -5,7 +5,6 @@ import (
 
 	"example.com/v0/src/ecs"
 	"example.com/v0/src/impl/components"
-	"example.com/v0/src/impl/factories/countryFactory"
 	"example.com/v0/src/impl/systems"
 	"example.com/v0/src/impl/tools"
 	"example.com/v0/src/queue"
@@ -16,22 +15,21 @@ import (
 	"golang.org/x/image/font/basicfont"
 )
 
-func NewScene(win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) *ecs.Scene {
-	mainScene := ecs.NewScene[MainUpdater]()
-	configureScene(mainScene, win, eventSystem, drawSystem)
+func NewScene() *ecs.Scene {
+	mainScene := ecs.NewScene()
 
 	return mainScene
 }
 
-func configureScene(s *ecs.Scene, win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) {
-	UI := s.CreateEntity()
-	UICanvas := ecs.Add[components.CanvasComponent](UI)
-	clock := ecs.Add[components.Combiner[components.TimeComponent, components.TextComponent]](UI)
+func ConfigureScene(s *ecs.Scene, win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) (player ecs.Entity, world ecs.Entity, ui ecs.Entity) {
+	ui = s.CreateEntity()
+	UICanvas := ecs.Add[components.CanvasComponent](ui)
+	clock := ecs.Add[components.Combiner[components.TimeComponent, components.TextComponent]](ui)
 
-	world := s.CreateEntity()
+	world = s.CreateEntity()
 	worldMap := ecs.Add[components.Combiner[components.DrawComponent, components.ColliderComponent]](world)
 
-	player := s.CreateEntity()
+	player = s.CreateEntity()
 	camera := ecs.Add[components.Combiner[components.CameraComponent, components.ColliderComponent]](player)
 
 	cameraMatrix := components.CameraComponent{}
@@ -63,24 +61,9 @@ func configureScene(s *ecs.Scene, win *pixelgl.Window, eventSystem *systems.Even
 	worldMap.T2 = worldMapCollider
 
 	// Map every component that will be always drawn
-	drawSystem.Enqueue(queue.SEVEN, UI, UICanvas)
+	drawSystem.Enqueue(queue.SEVEN, ui, UICanvas)
 	drawSystem.Enqueue(queue.TWO, player, worldMap.GetSecond(), camera.GetSecond())
 	drawSystem.Enqueue(queue.ZERO, world, worldMap.GetFirst())
 
-	// Map the necessary entities onto the updater
-	u := s.Updater.(MainUpdater)
-
-	u.ui = UI
-	u.world = world
-	u.player = player
-
-	u.window = win
-	u.eventSystem = eventSystem
-	u.drawSystem = drawSystem
-
-	s.Updater = u
-
-	// Factory stuff. Temporary
-	countries = make([]ecs.Entity, 0)
-	countryFactoryHolder = countryFactory.NewFactory(s, 0, win.Bounds().Center(), pixel.ZV, "EST", eventSystem, drawSystem)
+	return player, world, ui
 }

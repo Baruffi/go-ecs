@@ -2,12 +2,14 @@ package impl
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"example.com/v0/src/ecs"
+	"example.com/v0/src/impl/factories/countryFactory"
 	"example.com/v0/src/impl/scenes/mainScene"
 	"example.com/v0/src/impl/systems"
-	"example.com/v0/src/impl/tools"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
@@ -16,6 +18,15 @@ import (
 const (
 	MainSceneId = "mainScene"
 )
+
+func setupLog() {
+	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.SetOutput(file)
+}
 
 func setupWindow() *pixelgl.Window {
 	cfg := pixelgl.WindowConfig{
@@ -38,37 +49,36 @@ func setupSystems(win *pixelgl.Window) (*systems.EventSystem, *systems.DrawSyste
 	return eventSystem, drawSystem
 }
 
+func setupMainScene(win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) (string, *ecs.Scene, ecs.Updater[*ecs.Stage]) {
+	newMainScene := mainScene.NewScene()
+	player, world, ui := mainScene.ConfigureScene(newMainScene, win, eventSystem, drawSystem)
+	countryFactory := countryFactory.NewFactory(newMainScene, 0, win.Bounds().Center(), pixel.ZV, "EST", eventSystem, drawSystem)
+	mainUpdater := mainScene.NewUpdater(countryFactory, win, player, world, ui)
+
+	return MainSceneId, newMainScene, mainUpdater
+}
+
 func setupStage(win *pixelgl.Window, eventSystem *systems.EventSystem, drawSystem *systems.DrawSystem) *ecs.Stage {
-	scenes := map[string]*ecs.Scene{
-		MainSceneId: mainScene.NewScene(win, eventSystem, drawSystem),
-	}
-	stage := ecs.NewStage(MainSceneId, scenes)
+	stage := ecs.NewStage()
+	stage.Include(setupMainScene(win, eventSystem, drawSystem))
+	stage.Start(MainSceneId)
 
 	return stage
 }
 
-func setupClock() *tools.Clock {
-	clock := &tools.Clock{}
-	clock.Init(-1)
-
-	return clock
-}
-
 func Run() {
+	setupLog()
 	win := setupWindow()
 	eventSystem, drawSystem := setupSystems(win)
 	stage := setupStage(win, eventSystem, drawSystem)
-	clock := setupClock()
 
 	var (
 		frames = 0
 		second = time.NewTicker(time.Second)
 	)
-	for !win.Closed() {
-		dt := clock.Dt()
-
-		scene := stage.GetScene()
-		scene.Update(dt)
+	for stage.IsActive() {
+		stagehand := stage.GetStagehand()
+		stagehand.Update()
 
 		eventSystem.Execute()
 
@@ -86,6 +96,8 @@ func Run() {
 		default:
 		}
 
-		clock.Tick()
+		if win.Closed() {
+			stage.End()
+		}
 	}
 }
